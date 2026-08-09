@@ -3,7 +3,7 @@
     <van-nav-bar :title="`桌号 ${cartStore.tableId || '-'} · 点餐`" left-arrow @click-left="goBack" />
 
     <div class="tab-wrap">
-      <van-tabs v-model:active="activeTab" sticky offset-top="46" shrink line-width="24">
+      <van-tabs v-model:active="activeTab" shrink line-width="24">
         <van-tab title="全部" />
         <van-tab v-for="c in categories" :key="c.id" :title="c.name" />
       </van-tabs>
@@ -108,7 +108,7 @@ const goBack = () => router.back()
 .tab-wrap {
   background: #fff;
   position: sticky;
-  top: 46px;
+  top: 0;
   z-index: 10;
 }
 
