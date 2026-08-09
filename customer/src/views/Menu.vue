@@ -1,6 +1,13 @@
 <template>
   <div class="menu-page">
-    <van-nav-bar :title="`桌号 ${cartStore.tableId || '-'} · 点餐`" left-arrow @click-left="goBack" right-text="我的" @click-right="goProfile" />
+    <van-nav-bar :title="`桌号 ${cartStore.tableId || '-'} · 点餐`" left-arrow @click-left="goBack">
+      <template #right>
+        <div class="profile-entry" @click="goProfile">
+          <span class="entry-icon">👤</span>
+          <span class="entry-text">我的</span>
+        </div>
+      </template>
+    </van-nav-bar>
 
     <div class="tab-wrap">
       <van-tabs v-model:active="activeTab" shrink line-width="24">
@@ -104,6 +111,23 @@ const goProfile = () => router.push('/profile')
 .menu-page {
   min-height: 100vh;
   padding-bottom: 60px;
+}
+
+.profile-entry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ff9a6c, #e54d2e);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(229, 77, 46, 0.35);
+}
+
+.entry-icon {
+  font-size: 15px;
 }
 
 .tab-wrap {
