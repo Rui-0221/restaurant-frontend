@@ -144,10 +144,11 @@ const toggleStatus = async (row) => {
   }
 }
 
-// 二维码内容用当前访问地址（局域网 IP 时手机可直接扫码）
+// 二维码指向顾客端（5173）：沿用当前 hostname（局域网 IP 时手机可直接扫码），
+// 端口固定为顾客端，避免扫出来落在管理端（5174）而路由不存在
 const showQr = async (row) => {
   qrTable.value = row
-  qrUrl.value = `${location.origin}/#/table/${row.id}`
+  qrUrl.value = `${location.protocol}//${location.hostname}:5173/#/table/${row.id}`
   qrDataUrl.value = await QRCode.toDataURL(qrUrl.value, { width: 260, margin: 1 })
   qrVisible.value = true
 }

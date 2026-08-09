@@ -29,6 +29,8 @@ npm run dev            # http://localhost:5174
 
 两个应用的 Vite proxy 均将 `/api` 转发到 `http://localhost:8080`（rewrite 去掉 `/api` 前缀）。
 
+> 两个 dev server 均配置了 `host: true`（监听局域网），手机与电脑连同一 Wi-Fi 即可访问。手机扫码打不开时，检查 **Windows 防火墙**是否放行 Node.js（首次启动会弹窗，需允许"专用网络"；或临时关闭防火墙验证）。
+
 ## 演示账号（种子数据）
 
 | 角色 | 用户名 | 密码 |
