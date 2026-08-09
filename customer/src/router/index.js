@@ -9,6 +9,7 @@ const routes = [
   { path: '/menu', name: 'menu', component: () => import('../views/Menu.vue') },
   { path: '/cart', name: 'cart', component: () => import('../views/Cart.vue') },
   { path: '/order-detail/:id', name: 'order-detail', component: () => import('../views/OrderDetail.vue') },
+  { path: '/profile', name: 'profile', component: () => import('../views/Profile.vue') },
 ]
 
 const router = createRouter({
@@ -19,7 +20,7 @@ const router = createRouter({
 // 轻量守卫：点餐/购物车需要登录，未登录跳登录页并记录回跳
 router.beforeEach((to) => {
   const userStore = useUserStore()
-  const needAuth = ['menu', 'cart']
+  const needAuth = ['menu', 'cart', 'profile']
   if (needAuth.includes(to.name) && !userStore.isLogin) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }

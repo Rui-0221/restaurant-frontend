@@ -1,6 +1,6 @@
 <template>
   <div class="menu-page">
-    <van-nav-bar :title="`桌号 ${cartStore.tableId || '-'} · 点餐`" left-arrow @click-left="goBack" />
+    <van-nav-bar :title="`桌号 ${cartStore.tableId || '-'} · 点餐`" left-arrow @click-left="goBack" right-text="我的" @click-right="goProfile" />
 
     <div class="tab-wrap">
       <van-tabs v-model:active="activeTab" shrink line-width="24">
@@ -97,6 +97,7 @@ const onCount = (dish, v) => {
 
 const goCart = () => router.push('/cart')
 const goBack = () => router.back()
+const goProfile = () => router.push('/profile')
 </script>
 
 <style scoped>
