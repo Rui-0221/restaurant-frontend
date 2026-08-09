@@ -39,6 +39,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useUserStore } from '../store/user'
 import { useCartStore } from '../store/cart'
+import { setToken } from '../utils/storage'
 import { login, getMe } from '../api/user'
 
 const route = useRoute()
@@ -62,6 +63,7 @@ const onLogin = async () => {
   try {
     // 注意：/users/login 返回的是裸 token 字符串
     const token = await login({ phone: form.phone, password: form.password })
+    setToken(token) // 先写入 token，getMe 请求才能携带 Authorization（否则后端 401）
     const me = await getMe()
     userStore.setLogin(token, me)
     showToast('登录成功')
