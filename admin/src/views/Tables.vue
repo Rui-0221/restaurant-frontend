@@ -49,9 +49,22 @@
     <!-- 二维码弹窗 -->
     <el-dialog v-model="qrVisible" :title="`桌台 ${qrTable?.name || ''} 点餐二维码`" width="360px" align-center>
       <div class="qr-box">
-        <img v-if="qrDataUrl" :src="qrDataUrl" alt="二维码" />
-        <div class="qr-tip">手机扫描二维码（同一局域网）即可进入该桌点餐</div>
-        <div class="qr-url">{{ qrUrl }}</div>
+        <template v-if="qrLocalOnly">
+          <div class="qr-warning">
+            <div class="qr-warning-title">⚠️ 无法生成手机可用的二维码</div>
+            <div>当前是通过 <b>localhost</b> 打开管理端的，手机扫了会在自己身上找这个地址，打不开。</div>
+            <div class="qr-warning-how">
+              改用局域网地址打开管理端：<br />
+              ① 看终端里 Vite 启动输出的 Network 行（如 http://192.168.x.x:5174）<br />
+              ② 用该地址重新打开管理端 → 再点「二维码」
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <img v-if="qrDataUrl" :src="qrDataUrl" alt="二维码" />
+          <div class="qr-tip">手机扫描二维码（同一局域网）即可进入该桌点餐</div>
+          <div class="qr-url">{{ qrUrl }}</div>
+        </template>
       </div>
     </el-dialog>
   </div>
@@ -78,6 +91,7 @@ const qrVisible = ref(false)
 const qrTable = ref(null)
 const qrDataUrl = ref('')
 const qrUrl = ref('')
+const qrLocalOnly = ref(false) // 通过 localhost 打开时手机不可访问，提示改用局域网地址
 
 const load = async () => {
   loading.value = true
@@ -148,7 +162,17 @@ const toggleStatus = async (row) => {
 // 端口固定为顾客端，避免扫出来落在管理端（5174）而路由不存在
 const showQr = async (row) => {
   qrTable.value = row
-  qrUrl.value = `${location.protocol}//${location.hostname}:5173/#/table/${row.id}`
+  // localhost/127.0.0.1 只在本机有效：手机扫码会在自己身上找服务 → 直接提示，不生成废码
+  const host = location.hostname
+  if (host === 'localhost' || host === '127.0.0.1') {
+    qrLocalOnly.value = true
+    qrDataUrl.value = ''
+    qrUrl.value = ''
+    qrVisible.value = true
+    return
+  }
+  qrLocalOnly.value = false
+  qrUrl.value = `${location.protocol}//${host}:5173/#/table/${row.id}`
   qrDataUrl.value = await QRCode.toDataURL(qrUrl.value, { width: 260, margin: 1 })
   qrVisible.value = true
 }
@@ -230,6 +254,28 @@ onMounted(load)
   height: 240px;
   border: 1px solid #eee;
   border-radius: 8px;
+}
+
+.qr-warning {
+  background: #fdf0ec;
+  border: 1px solid #f3d9d0;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: left;
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.qr-warning-title {
+  color: #f56c6c;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.qr-warning-how {
+  margin-top: 10px;
+  color: #909399;
 }
 
 .qr-tip {
