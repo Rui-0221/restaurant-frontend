@@ -14,7 +14,7 @@
     <!-- 当前桌台订单 -->
     <div class="section-title">当前桌台</div>
     <template v-if="cartStore.tableId">
-      <div v-if="order" class="card order-card" @click="router.push(`/order-detail/${order.id}`)">
+      <div v-if="order" class="card order-card" @click="openOrder(order)">
         <div class="order-main">
           <span class="status-tag" :style="{ color: ORDER_STATUS[order.status]?.color }">
             {{ ORDER_STATUS_TEXT(order.status) }}
@@ -33,6 +33,24 @@
     </template>
     <van-empty v-else description="未关联桌台" />
 
+    <!-- 历史订单 -->
+    <div class="section-title">历史订单</div>
+    <template v-if="historyOrders.length">
+      <div v-for="o in historyOrders" :key="o.id" class="card order-card" @click="openOrder(o)">
+        <div class="order-main">
+          <span class="status-tag" :style="{ color: ORDER_STATUS[o.status]?.color }">
+            {{ ORDER_STATUS_TEXT(o.status) }}
+          </span>
+          <span class="order-no">#{{ o.id }}</span>
+        </div>
+        <div class="order-sub">
+          <span>桌号 {{ o.tableId }} · {{ formatTime(o.createTime) }}</span>
+          <span class="order-price">¥{{ Number(o.totalAmount).toFixed(2) }}</span>
+        </div>
+      </div>
+    </template>
+    <van-empty v-else description="暂无历史订单" />
+
     <!-- 退出登录 -->
     <div class="actions">
       <van-button block round size="large" class="logout-btn" @click="onLogout">退出登录</van-button>
@@ -47,14 +65,15 @@ import { showConfirmDialog } from 'vant'
 import { useUserStore } from '../store/user'
 import { useCartStore } from '../store/cart'
 import { getMe } from '../api/user'
-import { getTableActiveOrder } from '../api/order'
-import { ORDER_STATUS, ORDER_STATUS_TEXT } from '../utils/constants'
+import { getTableActiveOrder, getMyOrders } from '../api/order'
+import { ORDER_STATUS, ORDER_STATUS_TEXT, formatTime } from '../utils/constants'
 
 const router = useRouter()
 const userStore = useUserStore()
 const cartStore = useCartStore()
 
 const order = ref(null)
+const historyOrders = ref([])
 
 onMounted(async () => {
   // 刷新用户信息（登录时已缓存，此处保证最新）
@@ -67,13 +86,27 @@ onMounted(async () => {
 
   // 当前桌台活跃订单（有桌台上下文才查）
   const tid = cartStore.tableId
-  if (!tid) return
+  if (tid) {
+    try {
+      order.value = await getTableActiveOrder(tid)
+    } catch {
+      // 拦截器已提示
+    }
+  }
+
+  // 历史订单（含已结账/已取消，每次进入刷新）
   try {
-    order.value = await getTableActiveOrder(tid)
+    historyOrders.value = (await getMyOrders()) || []
   } catch {
     // 拦截器已提示
   }
 })
+
+// 打开订单详情：把整单塞进 activeOrder，复用详情页的缓存渲染（历史订单无需再请求）
+const openOrder = (o) => {
+  cartStore.activeOrder = o
+  router.push(`/order-detail/${o.id}`)
+}
 
 const onLogout = async () => {
   try {
