@@ -1,6 +1,6 @@
 # 🍽️ 在线餐饮管理平台 — 前端
 
-> 配套 [restaurant-backend](https://github.com/)（Spring Boot 3.2 + MyBatis 扫码点餐后端）的双前端项目
+> 配套 [restaurant-backend](https://github.com/Rui-0221/restaurant-backend)（Spring Boot 3.2 + MyBatis 扫码点餐后端）的双前端项目
 
 ## 项目结构
 
