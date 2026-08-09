@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <el-row :gutter="16">
-      <el-col :xs="24" :sm="8">
+      <el-col v-if="authStore.isAdmin" :xs="24" :sm="8">
         <div class="stat-card today">
           <div class="stat-icon">💰</div>
           <div>
@@ -11,7 +11,7 @@
           </div>
         </div>
       </el-col>
-      <el-col :xs="24" :sm="8">
+      <el-col :xs="24" :sm="authStore.isAdmin ? 8 : 12">
         <div class="stat-card tables">
           <div class="stat-icon">🪑</div>
           <div>
@@ -26,7 +26,7 @@
           </div>
         </div>
       </el-col>
-      <el-col :xs="24" :sm="8">
+      <el-col :xs="24" :sm="authStore.isAdmin ? 8 : 12">
         <div class="stat-card orders">
           <div class="stat-icon">📋</div>
           <div>
@@ -49,7 +49,10 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import * as echarts from 'echarts'
 import { getTodayStatistics, getOrders, getTables } from '../api/modules'
+import { useAuthStore } from '../store/auth'
 import { ORDER_STATUS } from '../utils/constants'
+
+const authStore = useAuthStore()
 
 const revenue = ref(0)
 const todayDate = ref('')
@@ -66,7 +69,8 @@ let chart = null
 
 const loadAll = async () => {
   const [stat, list, t] = await Promise.all([
-    getTodayStatistics().catch(() => null),
+    // 营业额仅管理员可见：非管理员不调用统计接口（后端也校验角色），避免报错提示
+    authStore.isAdmin ? getTodayStatistics().catch(() => null) : Promise.resolve(null),
     getOrders(1, 100).catch(() => null),
     getTables().catch(() => []),
   ])
