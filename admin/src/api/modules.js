@@ -11,6 +11,7 @@ export const changePassword = (oldPassword, newPassword) =>
 
 // 菜品
 export const getDishes = () => request.get('/dishes')
+export const getOnSaleDishes = () => request.get('/dishes/on-sale')
 export const addDish = (data) => request.post('/dishes', data)
 export const updateDish = (data) => request.put('/dishes', data)
 export const deleteDish = (id) => request.delete(`/dishes/${id}`)
@@ -36,3 +37,6 @@ export const getOrder = (id) => request.get(`/orders/${id}`)
 export const changeOrderStatus = (id, status) =>
   request.put(`/orders/${id}/status`, null, { params: { status } })
 export const getTodayStatistics = () => request.get('/orders/statistics/today')
+
+// 帮顾客点餐（员工代下单，userId 不传，订单归属桌台）
+export const scanOrder = (data) => request.post('/orders/scan-order', data)

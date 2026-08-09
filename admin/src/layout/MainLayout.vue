@@ -15,6 +15,10 @@
           <el-icon><Tickets /></el-icon>
           <span>订单管理</span>
         </el-menu-item>
+        <el-menu-item v-if="auth.isAdmin || auth.isWaiter" index="/order-take">
+          <el-icon><ShoppingCart /></el-icon>
+          <span>帮顾客点餐</span>
+        </el-menu-item>
         <el-menu-item v-if="auth.isAdmin" index="/dishes">
           <el-icon><Dish /></el-icon>
           <span>菜品管理</span>

@@ -10,6 +10,7 @@ const routes = [
     children: [
       { path: 'dashboard', name: 'dashboard', component: () => import('../views/Dashboard.vue'), meta: { title: '工作台' } },
       { path: 'orders', name: 'orders', component: () => import('../views/Orders.vue'), meta: { title: '订单管理' } },
+      { path: 'order-take', name: 'orderTake', component: () => import('../views/OrderTaking.vue'), meta: { title: '帮顾客点餐' } },
       { path: 'dishes', name: 'dishes', component: () => import('../views/Dishes.vue'), meta: { title: '菜品管理', adminOnly: true } },
       { path: 'categories', name: 'categories', component: () => import('../views/Categories.vue'), meta: { title: '分类管理', adminOnly: true } },
       { path: 'tables', name: 'tables', component: () => import('../views/Tables.vue'), meta: { title: '桌台管理' } },
