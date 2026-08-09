@@ -1,0 +1,61 @@
+/* 顾客端全局样式 —— 暖色餐厅主题 */
+:root {
+  --brand-color: #e54d2e;
+  --brand-dark: #c93d20;
+  --brand-light: #fff3f0;
+  --text-main: #2d2d2d;
+  --text-sub: #8a8a8a;
+  --bg-page: #f6f6f4;
+  --card-radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--bg-page);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  height: 100%;
+}
+
+/* Vant 主题变量覆盖 */
+:root:root {
+  --van-primary-color: var(--brand-color);
+  --van-button-primary-background: var(--brand-color);
+  --van-button-primary-border-color: var(--brand-color);
+  --van-tab-active-text-color: var(--brand-color);
+  --van-tabs-bottom-bar-color: var(--brand-color);
+  --van-stepper-button-icon-color: var(--brand-color);
+  --van-submit-bar-button-background: var(--brand-color);
+  --van-nav-bar-icon-color: var(--brand-color);
+  --van-nav-bar-text-color: var(--brand-color);
+}
+
+.page-container {
+  min-height: 100%;
+  padding-bottom: 80px; /* 给底部购物车条留空间 */
+}
+
+/* 卡片通用样式 */
+.card {
+  background: #fff;
+  border-radius: var(--card-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* 金额主色 */
+.price {
+  color: var(--brand-color);
+  font-weight: 600;
+}
