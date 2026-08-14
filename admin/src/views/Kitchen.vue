@@ -102,8 +102,11 @@ const startCooking = async (o) => {
 let ws = null
 let reconnectTimer = null
 let heartbeatTimer = null
+let pollingTimer = null
+let isUnmounted = false
 
 const connectWs = () => {
+  if (isUnmounted) return
   const token = auth.token
   if (!token) return
   // 后厨屏只需厨师 token（role=3），服务端握手校验
@@ -128,7 +131,7 @@ const connectWs = () => {
 
   ws.onclose = () => {
     wsConnected.value = false
-    scheduleReconnect()
+    if (!isUnmounted) scheduleReconnect()
   }
 
   ws.onerror = () => {
@@ -138,9 +141,10 @@ const connectWs = () => {
 
 // 断线 3 秒后重连
 const scheduleReconnect = () => {
+  if (isUnmounted) return
   clearTimeout(reconnectTimer)
   reconnectTimer = setTimeout(() => {
-    if (auth.isLogin) connectWs()
+    if (!isUnmounted && auth.isLogin) connectWs()
   }, 3000)
 }
 
@@ -183,12 +187,14 @@ onMounted(() => {
   connectWs()
   tick()
   heartbeatTimer = setInterval(tick, 1000) // 每秒刷新时钟与经过时长
-  setInterval(loadOrders, 30000) // 30s 兜底轮询，防消息丢失
+  pollingTimer = setInterval(loadOrders, 30000) // 30s 兜底轮询，防消息丢失
 })
 
 onBeforeUnmount(() => {
+  isUnmounted = true
   clearTimeout(reconnectTimer)
   clearInterval(heartbeatTimer)
+  clearInterval(pollingTimer)
   ws?.close()
 })
 </script>
