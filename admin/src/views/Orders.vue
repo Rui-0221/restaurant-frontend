@@ -94,6 +94,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { getOrders, getOrder, changeOrderStatus } from '../api/modules'
+import { recoverOrderState } from '../services/orderState'
 import { useAuthStore } from '../store/auth'
 import { ORDER_STATUS, STATUS_ACTIONS, formatTime } from '../utils/constants'
 
@@ -143,9 +144,8 @@ const availableActions = computed(() => {
 })
 
 const refreshAfterActionFailure = async (orderId) => {
-  await load()
   try {
-    current.value = await getOrder(orderId)
+    current.value = await recoverOrderState(orderId, { loadOrders: load, getOrder })
   } catch {
     current.value = null
     drawerVisible.value = false
