@@ -9,19 +9,9 @@
       </div>
     </div>
 
-    <div class="panel">
-      <!-- 未登录 -->
-      <template v-if="!userStore.isLogin">
-        <div class="tip">扫码点餐，美味即达</div>
-        <van-empty description="登录后开始点餐" />
-        <div class="actions">
-          <van-button type="primary" block round @click="goLogin">立即登录</van-button>
-          <van-button plain round block class="reg-btn" @click="goRegister">注册新账号</van-button>
-        </div>
-      </template>
-
+    <div v-if="userStore.isLogin" class="panel">
       <!-- 查询中 -->
-      <van-loading v-else-if="loading" class="loading" />
+      <van-loading v-if="loading" class="loading" />
 
       <!-- 首次点餐 -->
       <template v-else-if="!activeOrder">
@@ -153,7 +143,6 @@ const onLogin = async () => {
 }
 
 const goMenu = () => router.push('/menu')
-const goLogin = () => router.push({ path: '/login', query: { redirect: `/table/${tableId}` } })
 const goRegister = () => {
   showLogin.value = false
   router.push({ path: '/register', query: { redirect: `/table/${tableId}` } })
@@ -230,10 +219,6 @@ const goRegister = () => {
 
 .actions {
   margin-top: 16px;
-}
-
-.reg-btn {
-  margin-top: 10px;
 }
 
 .order-summary {
