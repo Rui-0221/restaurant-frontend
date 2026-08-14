@@ -142,18 +142,34 @@ const availableActions = computed(() => {
   return (STATUS_ACTIONS[auth.role] || []).filter((a) => a.from === current.value.status)
 })
 
+const refreshAfterActionFailure = async (orderId) => {
+  await load()
+  try {
+    current.value = await getOrder(orderId)
+  } catch {
+    current.value = null
+    drawerVisible.value = false
+  }
+}
+
 const doAction = async (act) => {
   if (act.danger) {
-    await ElMessageBox.confirm(`确定要取消订单 #${current.value.id} 吗？`, '提示', { type: 'warning' })
+    try {
+      await ElMessageBox.confirm(`确定要取消订单 #${current.value.id} 吗？`, '提示', { type: 'warning' })
+    } catch {
+      return
+    }
   }
+  const orderId = current.value.id
   acting.value = act.to
   try {
-    await changeOrderStatus(current.value.id, act.to)
+    await changeOrderStatus(orderId, act.to)
     ElMessage.success(`已${act.label}`)
     drawerVisible.value = false
     load()
   } catch {
-    // 拦截器已提示（如越权流转）
+    // 拦截器已提示（如 CAS 冲突）；刷新后按服务器最新状态重新计算可操作按钮。
+    await refreshAfterActionFailure(orderId)
   } finally {
     acting.value = null
   }

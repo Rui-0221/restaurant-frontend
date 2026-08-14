@@ -155,6 +155,8 @@ const s4 = await api(ADMIN, `/orders/${orderId}/status?status=4`, { method: 'PUT
 check('服务员 2→3→4 上菜/用餐', s3.code === 1 && s4.code === 1)
 const s5 = await api(ADMIN, `/orders/${orderId}/status?status=5`, { method: 'PUT', token: waiterToken })
 check('服务员 4→5 结账', s5.code === 1)
+const staleCheckout = await api(ADMIN, `/orders/${orderId}/status?status=5`, { method: 'PUT', token: waiterToken })
+check('过期状态操作被拒绝', staleCheckout.code === 0, staleCheckout.msg)
 
 console.log('--- 结账后桌台释放 ---')
 const tables = await api(ADMIN, '/tables', { token: waiterToken })
