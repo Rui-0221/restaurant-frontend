@@ -155,7 +155,9 @@ const refreshAfterActionFailure = async (orderId) => {
 const doAction = async (act) => {
   if (act.danger) {
     try {
-      await ElMessageBox.confirm(`确定要取消订单 #${current.value.id} 吗？`, '提示', { type: 'warning' })
+      await ElMessageBox.confirm(`确定要取消订单 #${current.value.id} 吗？`, '提示', {
+        type: 'warning',
+      })
     } catch {
       return
     }

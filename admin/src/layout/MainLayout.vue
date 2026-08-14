@@ -6,7 +6,13 @@
         <span class="logo-icon">🍜</span>
         <span>餐厅管理系统</span>
       </div>
-      <el-menu :default-active="activeMenu" router background-color="#1f2430" text-color="#a8b2c1" active-text-color="#fff">
+      <el-menu
+        :default-active="activeMenu"
+        router
+        background-color="#1f2430"
+        text-color="#a8b2c1"
+        active-text-color="#fff"
+      >
         <el-menu-item index="/dashboard">
           <el-icon><DataBoard /></el-icon>
           <span>工作台</span>
@@ -43,7 +49,14 @@
       <el-header class="header">
         <div class="header-left">
           <span class="page-title">{{ route.meta.title || '' }}</span>
-          <el-tag v-if="auth.isChef" size="small" type="primary" effect="dark" style="cursor: pointer" @click="router.push('/kitchen')">
+          <el-tag
+            v-if="auth.isChef"
+            size="small"
+            type="primary"
+            effect="dark"
+            style="cursor: pointer"
+            @click="router.push('/kitchen')"
+          >
             后厨屏入口 →
           </el-tag>
         </div>

@@ -62,7 +62,9 @@ const orderList = ref([])
 const totalTables = computed(() => tables.value.length)
 const freeTables = computed(() => tables.value.filter((t) => t.status === 0).length)
 const occupiedTables = computed(() => tables.value.filter((t) => t.status === 1).length)
-const activeOrders = computed(() => orderList.value.filter((o) => [1, 2, 3, 4].includes(o.status)).length)
+const activeOrders = computed(
+  () => orderList.value.filter((o) => [1, 2, 3, 4].includes(o.status)).length,
+)
 
 const chartRef = ref(null)
 let chart = null

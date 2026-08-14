@@ -29,7 +29,13 @@
         <el-table-column label="操作" width="130" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openForm(row)">编辑</el-button>
-            <el-button link type="danger" :disabled="row.id === auth.employeeId" @click="remove(row)">删除</el-button>
+            <el-button
+              link
+              type="danger"
+              :disabled="row.id === auth.employeeId"
+              @click="remove(row)"
+              >删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -74,7 +80,12 @@
           <el-input v-model="pwdForm.oldPassword" type="password" show-password />
         </el-form-item>
         <el-form-item label="新密码" required>
-          <el-input v-model="pwdForm.newPassword" type="password" show-password placeholder="至少 6 位" />
+          <el-input
+            v-model="pwdForm.newPassword"
+            type="password"
+            show-password
+            placeholder="至少 6 位"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -89,7 +100,13 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Key } from '@element-plus/icons-vue'
-import { getEmployees, addEmployee, updateEmployee, deleteEmployee, changePassword } from '../api/modules'
+import {
+  getEmployees,
+  addEmployee,
+  updateEmployee,
+  deleteEmployee,
+  changePassword,
+} from '../api/modules'
 import { useAuthStore } from '../store/auth'
 import { ROLES } from '../utils/constants'
 
@@ -99,7 +116,15 @@ const loading = ref(false)
 
 const dialogVisible = ref(false)
 const saving = ref(false)
-const form = reactive({ id: null, username: '', password: '', name: '', phone: '', role: 2, status: 1 })
+const form = reactive({
+  id: null,
+  username: '',
+  password: '',
+  name: '',
+  phone: '',
+  role: 2,
+  status: 1,
+})
 
 const pwdVisible = ref(false)
 const pwdSaving = ref(false)
@@ -128,7 +153,15 @@ const openForm = (row) => {
       status: row.status,
     })
   } else {
-    Object.assign(form, { id: null, username: '', password: '', name: '', phone: '', role: 2, status: 1 })
+    Object.assign(form, {
+      id: null,
+      username: '',
+      password: '',
+      name: '',
+      phone: '',
+      role: 2,
+      status: 1,
+    })
   }
   dialogVisible.value = true
 }

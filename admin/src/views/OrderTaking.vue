@@ -25,7 +25,9 @@
           </span>
         </div>
         <div class="toolbar-right">
-          <span v-if="cartCount > 0" class="cart-summary">已选 {{ cartCount }} 项，合计 ¥{{ cartTotal.toFixed(2) }}</span>
+          <span v-if="cartCount > 0" class="cart-summary"
+            >已选 {{ cartCount }} 项，合计 ¥{{ cartTotal.toFixed(2) }}</span
+          >
           <el-button type="primary" :disabled="!canSubmit" :loading="submitting" @click="onSubmit">
             提交订单
           </el-button>
@@ -41,7 +43,14 @@
       </el-tabs>
 
       <el-row :gutter="12">
-        <el-col v-for="dish in filteredDishes" :key="dish.id" :xs="12" :sm="8" :md="6" class="dish-col">
+        <el-col
+          v-for="dish in filteredDishes"
+          :key="dish.id"
+          :xs="12"
+          :sm="8"
+          :md="6"
+          class="dish-col"
+        >
           <div class="dish-card">
             <div class="dish-name">{{ dish.name }}</div>
             <div class="dish-desc">{{ dish.description || '暂无描述' }}</div>
@@ -66,7 +75,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getTables, getOnSaleDishes, getCategories, getActiveOrderByTable, scanOrder } from '../api/modules'
+import {
+  getTables,
+  getOnSaleDishes,
+  getCategories,
+  getActiveOrderByTable,
+  scanOrder,
+} from '../api/modules'
 import { resolveTableOrderContext } from '../services/tableOrderContext'
 import { ORDER_LIMITS } from '../utils/constants'
 
@@ -85,13 +100,18 @@ const cart = ref({})
 
 const selectedTable = computed(() => tables.value.find((t) => t.id === tableId.value) || null)
 const cartCount = computed(() =>
-  Object.values(cart.value).reduce((sum, item) => sum + item.amount, 0)
+  Object.values(cart.value).reduce((sum, item) => sum + item.amount, 0),
 )
 const cartTotal = computed(() =>
-  Object.values(cart.value).reduce((sum, item) => sum + item.amount * Number(item.dish.price), 0)
+  Object.values(cart.value).reduce((sum, item) => sum + item.amount * Number(item.dish.price), 0),
 )
-const canSubmit = computed(() =>
-  !!tableId.value && cartCount.value > 0 && !submitting.value && !contextLoading.value && !['error', 'inconsistent'].includes(tableContext.value.kind)
+const canSubmit = computed(
+  () =>
+    !!tableId.value &&
+    cartCount.value > 0 &&
+    !submitting.value &&
+    !contextLoading.value &&
+    !['error', 'inconsistent'].includes(tableContext.value.kind),
 )
 
 const filteredDishes = computed(() => {
@@ -173,7 +193,11 @@ const onSubmit = async () => {
     dishId: dish.id,
     amount,
   }))
-  if (items.length === 0 || items.length > ORDER_LIMITS.maxKinds || items.some((item) => item.amount < 1 || item.amount > ORDER_LIMITS.maxAmountPerDish)) {
+  if (
+    items.length === 0 ||
+    items.length > ORDER_LIMITS.maxKinds ||
+    items.some((item) => item.amount < 1 || item.amount > ORDER_LIMITS.maxAmountPerDish)
+  ) {
     ElMessage.warning('菜品数量或种类数不符合要求')
     return
   }

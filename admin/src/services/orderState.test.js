@@ -10,7 +10,10 @@ describe('recoverOrderState', () => {
       return { id: 9, status: 3 }
     })
 
-    await expect(recoverOrderState(9, { loadOrders, getOrder })).resolves.toEqual({ id: 9, status: 3 })
+    await expect(recoverOrderState(9, { loadOrders, getOrder })).resolves.toEqual({
+      id: 9,
+      status: 3,
+    })
     expect(events).toEqual(['list', 'detail'])
   })
 })

@@ -1,0 +1,5 @@
+dist
+node_modules
+# 保留当前由用户维护的生产部署适配，不在本次格式化基线中改写。
+src/views/Kitchen.vue
+src/views/Tables.vue

@@ -1,9 +1,17 @@
 import { defineStore } from 'pinia'
 import {
-  getToken, setToken, clearToken,
-  getEmployeeName, setEmployeeName, clearEmployeeName,
-  getRole, setRole, clearRole,
-  getEmployeeId, setEmployeeId, clearEmployeeId,
+  getToken,
+  setToken,
+  clearToken,
+  getEmployeeName,
+  setEmployeeName,
+  clearEmployeeName,
+  getRole,
+  setRole,
+  clearRole,
+  getEmployeeId,
+  setEmployeeId,
+  clearEmployeeId,
 } from '../utils/storage'
 import { decodeJwt } from '../utils/jwt'
 

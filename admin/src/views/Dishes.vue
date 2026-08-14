@@ -61,10 +61,18 @@
           <el-input-number v-model="form.price" :min="0.01" :precision="2" :step="1" />
         </el-form-item>
         <el-form-item label="图片URL">
-          <el-input v-model="form.image" placeholder="https://...（后端无上传接口，填外部图片地址）" />
+          <el-input
+            v-model="form.image"
+            placeholder="https://...（后端无上传接口，填外部图片地址）"
+          />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input v-model="form.description" type="textarea" :rows="2" placeholder="菜品简介（选填）" />
+          <el-input
+            v-model="form.description"
+            type="textarea"
+            :rows="2"
+            placeholder="菜品简介（选填）"
+          />
         </el-form-item>
         <el-form-item label="在售">
           <el-switch v-model="form.status" :active-value="1" :inactive-value="0" />
@@ -92,7 +100,15 @@ const loading = ref(false)
 
 const dialogVisible = ref(false)
 const saving = ref(false)
-const form = reactive({ id: null, name: '', categoryId: null, price: null, image: '', description: '', status: 1 })
+const form = reactive({
+  id: null,
+  name: '',
+  categoryId: null,
+  price: null,
+  image: '',
+  description: '',
+  status: 1,
+})
 
 const categoryName = (id) => categories.value.find((c) => c.id === id)?.name || '-'
 
@@ -113,7 +129,15 @@ const openForm = (row) => {
   if (row) {
     Object.assign(form, row)
   } else {
-    Object.assign(form, { id: null, name: '', categoryId: null, price: null, image: '', description: '', status: 1 })
+    Object.assign(form, {
+      id: null,
+      name: '',
+      categoryId: null,
+      price: null,
+      image: '',
+      description: '',
+      status: 1,
+    })
   }
   dialogVisible.value = true
 }

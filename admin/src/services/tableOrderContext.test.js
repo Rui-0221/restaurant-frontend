@@ -11,7 +11,9 @@ describe('resolveTableOrderContext', () => {
   })
 
   it('阻止空闲桌台却存在活跃订单的状态不一致', () => {
-    expect(resolveTableOrderContext({ status: 0 }, { id: 12 })).toMatchObject({ kind: 'inconsistent' })
+    expect(resolveTableOrderContext({ status: 0 }, { id: 12 })).toMatchObject({
+      kind: 'inconsistent',
+    })
   })
 
   it('将空闲且无订单的桌台识别为首次点餐', () => {

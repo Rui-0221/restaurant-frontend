@@ -41,7 +41,7 @@ request.interceptors.response.use(
       ElMessage.error(msg || '网络异常，请稍后重试')
     }
     return Promise.reject(error)
-  }
+  },
 )
 
 export default request

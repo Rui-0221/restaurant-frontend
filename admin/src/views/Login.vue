@@ -12,7 +12,13 @@
           <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" />
         </el-form-item>
         <el-form-item>
-          <el-input v-model="form.password" type="password" placeholder="密码" show-password :prefix-icon="Lock" />
+          <el-input
+            v-model="form.password"
+            type="password"
+            placeholder="密码"
+            show-password
+            :prefix-icon="Lock"
+          />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" class="login-btn" :loading="loading" @click="onLogin">
@@ -21,7 +27,9 @@
         </el-form-item>
       </el-form>
 
-      <div class="hint">演示账号：admin/123456（管理员）· waiter/123456（服务员）· chef/123456（后厨）</div>
+      <div class="hint">
+        演示账号：admin/123456（管理员）· waiter/123456（服务员）· chef/123456（后厨）
+      </div>
     </div>
   </div>
 </template>
