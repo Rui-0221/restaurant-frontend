@@ -17,6 +17,13 @@ export const useCartStore = defineStore('cart', {
   actions: {
     // 从扫码落地页进入时设置上下文
     setContext(tableId, mode, activeOrder = null) {
+      // 路由参数是字符串、接口数据可能是数字，统一后比较。
+      // 一旦切到另一桌，原购物车绝不能继续带过去。
+      const previousTableId = this.tableId == null ? null : String(this.tableId)
+      const nextTableId = tableId == null ? null : String(tableId)
+      if (previousTableId !== nextTableId) {
+        this.items = {}
+      }
       this.tableId = tableId
       this.mode = mode
       this.activeOrder = activeOrder
