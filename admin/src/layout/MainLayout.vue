@@ -1,13 +1,15 @@
 <template>
   <el-container class="layout">
     <!-- 侧边栏 -->
-    <el-aside width="220px" class="aside">
+    <el-aside :width="menuCollapsed ? '64px' : '224px'" class="aside">
       <div class="logo">
         <span class="logo-icon">🍜</span>
-        <span>餐厅管理系统</span>
+        <span v-show="!menuCollapsed">餐厅管理系统</span>
       </div>
       <el-menu
         :default-active="activeMenu"
+        :collapse="menuCollapsed"
+        :collapse-transition="false"
         router
         background-color="#1f2430"
         text-color="#a8b2c1"
@@ -48,6 +50,15 @@
       <!-- 顶栏 -->
       <el-header class="header">
         <div class="header-left">
+          <el-button
+            class="collapse-button"
+            text
+            circle
+            :aria-label="menuCollapsed ? '展开导航' : '收起导航'"
+            @click="collapsed = !collapsed"
+          >
+            <el-icon><Expand v-if="menuCollapsed" /><Fold v-else /></el-icon>
+          </el-button>
           <span class="page-title">{{ route.meta.title || '' }}</span>
           <el-tag
             v-if="auth.isChef"
@@ -75,7 +86,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../store/auth'
@@ -84,6 +95,11 @@ import { ROLES } from '../utils/constants'
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const compact = ref(false)
+const collapsed = ref(false)
+let compactMedia
+
+const menuCollapsed = computed(() => compact.value || collapsed.value)
 
 const activeMenu = computed(() => {
   if (route.path.startsWith('/kitchen')) return ''
@@ -92,6 +108,20 @@ const activeMenu = computed(() => {
 
 const roleLabel = computed(() => ROLES[auth.role]?.label || '未知')
 const roleTagType = computed(() => ROLES[auth.role]?.type || 'info')
+
+const updateCompact = (event) => {
+  compact.value = event.matches
+}
+
+onMounted(() => {
+  compactMedia = window.matchMedia('(max-width: 768px)')
+  compact.value = compactMedia.matches
+  compactMedia.addEventListener('change', updateCompact)
+})
+
+onBeforeUnmount(() => {
+  compactMedia?.removeEventListener('change', updateCompact)
+})
 
 const logout = async () => {
   await ElMessageBox.confirm('确定要退出登录吗？', '提示', { type: 'warning' })
@@ -108,13 +138,15 @@ const logout = async () => {
 .aside {
   background: var(--sidebar-bg);
   overflow-x: hidden;
+  transition: width 0.2s ease;
 }
 
 .logo {
   height: 60px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding: 0 20px;
   gap: 8px;
   color: #fff;
   font-size: 16px;
@@ -128,6 +160,7 @@ const logout = async () => {
 
 .aside :deep(.el-menu) {
   --el-menu-active-color: #fff;
+  border-right: 0;
 }
 
 .aside :deep(.el-menu-item.is-active) {
@@ -153,6 +186,11 @@ const logout = async () => {
   gap: 12px;
 }
 
+.collapse-button {
+  color: var(--text-sub);
+  font-size: 18px;
+}
+
 .page-title {
   font-size: 16px;
   font-weight: 600;
@@ -170,6 +208,7 @@ const logout = async () => {
 }
 
 .main {
+  min-width: 0;
   padding: 0;
   overflow-y: auto;
 }
