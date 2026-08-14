@@ -1,19 +1,25 @@
 <template>
   <div class="cart-page">
-    <van-nav-bar title="购物车" left-arrow @click-left="router.back()" />
+    <van-nav-bar title="确认菜品" left-arrow @click-left="router.back()" />
 
     <template v-if="cartStore.tableId">
       <div v-if="cartStore.mode === 'add'" class="add-banner">
-        ➕ 将追加到订单 #{{ cartStore.activeOrder?.id }}
+        <span class="banner-title">加菜模式</span>
+        <span>将追加到订单 #{{ cartStore.activeOrder?.id }}</span>
       </div>
 
-      <van-empty v-if="cartStore.totalCount === 0" description="购物车还是空的" />
+      <van-empty v-if="cartStore.totalCount === 0" description="还没有选择菜品">
+        <van-button round type="primary" @click="router.back()">返回菜单</van-button>
+      </van-empty>
 
       <div v-else class="cart-list">
         <div v-for="item in cartStore.list" :key="item.dish.id" class="cart-item card">
+          <div class="item-image" :style="itemImageStyle(item.dish)" aria-hidden="true">
+            {{ item.dish.name.charAt(0) }}
+          </div>
           <div class="item-info">
             <div class="item-name">{{ item.dish.name }}</div>
-            <div class="item-price price">¥{{ Number(item.dish.price).toFixed(2) }}</div>
+            <div class="item-price">单价 ¥{{ Number(item.dish.price).toFixed(2) }}</div>
           </div>
           <van-stepper
             :model-value="item.amount"
@@ -22,15 +28,27 @@
             @update:model-value="(v) => onCount(item.dish, v)"
           />
         </div>
+        <div class="order-summary card">
+          <div class="summary-row">
+            <span>已选菜品</span>
+            <span>{{ cartStore.totalCount }} 份，共 {{ cartStore.list.length }} 种</span>
+          </div>
+          <div class="summary-row total-row">
+            <span>预估订单金额</span>
+            <span class="price">¥{{ cartStore.totalPrice.toFixed(2) }}</span>
+          </div>
+          <p class="summary-note">最终金额以提交后的订单为准</p>
+        </div>
         <div class="clear-bar">
-          <span @click="clearCart">🗑 清空购物车</span>
+          <van-button plain round size="small" @click="clearCart">清空已选</van-button>
         </div>
       </div>
 
       <van-submit-bar
         v-if="cartStore.totalCount > 0"
         :price="Math.round(cartStore.totalPrice * 100)"
-        button-text="提交订单"
+        label="预估金额："
+        :button-text="cartStore.mode === 'add' ? '确认加菜' : '提交订单'"
         :loading="submitting"
         @submit="submit"
       />
@@ -51,6 +69,18 @@ import { ORDER_LIMITS } from '../utils/constants'
 const router = useRouter()
 const cartStore = useCartStore()
 const submitting = ref(false)
+
+const gradients = [
+  'linear-gradient(135deg, #ffcfb8, #ef7756)',
+  'linear-gradient(135deg, #f5e6a2, #d79d49)',
+  'linear-gradient(135deg, #b9dfcb, #5eaa88)',
+  'linear-gradient(135deg, #c6d9f8, #719ad7)',
+]
+
+const itemImageStyle = (dish) =>
+  dish.image
+    ? { backgroundImage: `url(${dish.image})` }
+    : { backgroundImage: gradients[dish.categoryId % gradients.length] }
 
 const onCount = (dish, v) => {
   const result = cartStore.setItemAmount(dish, v)
@@ -99,24 +129,49 @@ const submit = async () => {
 }
 
 .add-banner {
-  background: #ecf5ff;
-  color: #1989fa;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) var(--space-3) 0;
+  padding: 10px var(--space-3);
+  border: 1px solid rgb(25 137 250 / 18%);
+  border-radius: var(--radius-md);
+  background: rgb(25 137 250 / 8%);
+  color: var(--status-info);
   font-size: 13px;
-  padding: 10px 16px;
+}
+
+.banner-title {
+  font-weight: 600;
 }
 
 .cart-list {
-  padding: 12px;
+  padding: var(--space-3);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .cart-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.item-image {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 600;
+  background-position: center;
+  background-size: cover;
 }
 
 .item-name {
@@ -125,14 +180,44 @@ const submit = async () => {
 }
 
 .item-price {
-  margin-top: 6px;
-  font-size: 15px;
+  margin-top: var(--space-1);
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
+.order-summary {
+  padding: var(--space-4);
+}
+
+.summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
+.total-row {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border-subtle);
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.total-row .price {
+  font-size: 20px;
+}
+
+.summary-note {
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .clear-bar {
   text-align: center;
-  color: var(--text-sub);
-  font-size: 13px;
-  padding: 12px 0 4px;
+  padding: var(--space-1) 0;
 }
 </style>
