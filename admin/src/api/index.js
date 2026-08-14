@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { getToken, clearToken } from '../utils/storage'
+import { notifyAdminUnauthorized } from '../utils/unauthorized'
 
 const request = axios.create({
   baseURL: '/api',
@@ -31,6 +32,7 @@ request.interceptors.response.use(
     const msg = error.response?.data?.msg
     if (status === 401) {
       clearToken()
+      notifyAdminUnauthorized()
       ElMessage.error(msg || '登录已过期，请重新登录')
       if (!location.hash.includes('/login')) {
         location.hash = '#/login'
