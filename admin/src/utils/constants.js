@@ -20,6 +20,12 @@ export const ROLES = {
   3: { label: '后厨', type: 'primary' },
 }
 
+// 与后端 ScanOrderDTO 保持一致，员工代点餐也不能绕过数量边界。
+export const ORDER_LIMITS = {
+  maxKinds: 50,
+  maxAmountPerDish: 99,
+}
+
 // 订单状态流转按钮矩阵：role(1 admin / 2 waiter / 3 chef) + 当前状态 → 可操作
 // 后端强校验，这里只是控制 UI 显隐
 export const STATUS_ACTIONS = {

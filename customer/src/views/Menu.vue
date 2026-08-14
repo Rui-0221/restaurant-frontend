@@ -29,6 +29,7 @@
             <van-stepper
               :model-value="cartStore.items[dish.id]?.amount || 0"
               :min="0"
+              :max="ORDER_LIMITS.maxAmountPerDish"
               @update:model-value="(v) => onCount(dish, v)"
             />
           </div>
@@ -51,8 +52,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import { useCartStore } from '../store/cart'
 import { getOnSaleDishes, getCategories } from '../api/menu'
+import { ORDER_LIMITS } from '../utils/constants'
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -94,11 +97,9 @@ onMounted(async () => {
 })
 
 const onCount = (dish, v) => {
-  const cur = cartStore.items[dish.id]?.amount || 0
-  if (v > cur) {
-    cartStore.addItem(dish)
-  } else if (v < cur) {
-    cartStore.decItem(dish.id)
+  const result = cartStore.setItemAmount(dish, v)
+  if (!result.ok) {
+    showToast(result.message)
   }
 }
 

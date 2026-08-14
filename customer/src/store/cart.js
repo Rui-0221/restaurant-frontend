@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { ORDER_LIMITS } from '../utils/constants.js'
 
 // 购物车 + 点餐上下文（桌台、首次/加菜模式）
 export const useCartStore = defineStore('cart', {
@@ -29,18 +30,30 @@ export const useCartStore = defineStore('cart', {
       this.activeOrder = activeOrder
     },
     addItem(dish) {
-      if (this.items[dish.id]) {
-        this.items[dish.id].amount++
-      } else {
-        this.items[dish.id] = { dish, amount: 1 }
+      const currentAmount = this.items[dish.id]?.amount || 0
+      return this.setItemAmount(dish, currentAmount + 1)
+    },
+    setItemAmount(dish, amount) {
+      const nextAmount = Number(amount)
+      if (!Number.isInteger(nextAmount) || nextAmount < 0) {
+        return { ok: false, message: '菜品数量不合法' }
       }
+      if (nextAmount > ORDER_LIMITS.maxAmountPerDish) {
+        return { ok: false, message: `单个菜品最多 ${ORDER_LIMITS.maxAmountPerDish} 份` }
+      }
+      if (nextAmount === 0) {
+        delete this.items[dish.id]
+        return { ok: true }
+      }
+      if (!this.items[dish.id] && Object.keys(this.items).length >= ORDER_LIMITS.maxKinds) {
+        return { ok: false, message: `一次最多选择 ${ORDER_LIMITS.maxKinds} 种菜品` }
+      }
+      this.items[dish.id] = { dish, amount: nextAmount }
+      return { ok: true }
     },
     decItem(dishId) {
       if (this.items[dishId]) {
-        this.items[dishId].amount--
-        if (this.items[dishId].amount <= 0) {
-          delete this.items[dishId]
-        }
+        this.setItemAmount(this.items[dishId].dish, this.items[dishId].amount - 1)
       }
     },
     deleteItem(dishId) {

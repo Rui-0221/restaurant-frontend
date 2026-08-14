@@ -11,6 +11,12 @@ export const ORDER_STATUS = {
 
 export const ORDER_STATUS_TEXT = (status) => ORDER_STATUS[status]?.label || '未知状态'
 
+// 与后端 ScanOrderDTO 保持一致，避免顾客完成选择后才收到参数校验错误。
+export const ORDER_LIMITS = {
+  maxKinds: 50,
+  maxAmountPerDish: 99,
+}
+
 export const formatTime = (iso) => {
   if (!iso) return '-'
   return iso.replace('T', ' ').slice(0, 19)

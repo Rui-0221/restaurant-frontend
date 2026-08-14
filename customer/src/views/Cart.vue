@@ -18,6 +18,7 @@
           <van-stepper
             :model-value="item.amount"
             :min="1"
+            :max="ORDER_LIMITS.maxAmountPerDish"
             @update:model-value="(v) => onCount(item.dish, v)"
           />
         </div>
@@ -42,20 +43,19 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showSuccessToast, showConfirmDialog } from 'vant'
+import { showSuccessToast, showConfirmDialog, showToast } from 'vant'
 import { useCartStore } from '../store/cart'
 import { scanOrder } from '../api/order'
+import { ORDER_LIMITS } from '../utils/constants'
 
 const router = useRouter()
 const cartStore = useCartStore()
 const submitting = ref(false)
 
 const onCount = (dish, v) => {
-  const cur = cartStore.items[dish.id]?.amount || 0
-  if (v > cur) {
-    cartStore.addItem(dish)
-  } else if (v < cur) {
-    cartStore.decItem(dish.id)
+  const result = cartStore.setItemAmount(dish, v)
+  if (!result.ok) {
+    showToast(result.message)
   }
 }
 
@@ -66,6 +66,10 @@ const clearCart = async () => {
 
 const submit = async () => {
   if (!cartStore.tableId || cartStore.totalCount === 0) return
+  if (cartStore.list.length > ORDER_LIMITS.maxKinds) {
+    showToast(`一次最多选择 ${ORDER_LIMITS.maxKinds} 种菜品`)
+    return
+  }
   submitting.value = true
   try {
     const items = cartStore.list.map((i) => ({ dishId: i.dish.id, amount: i.amount }))

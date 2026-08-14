@@ -43,6 +43,7 @@
               <el-input-number
                 :model-value="cart[dish.id]?.amount || 0"
                 :min="0"
+                :max="ORDER_LIMITS.maxAmountPerDish"
                 size="small"
                 @change="(v) => onCount(dish, v)"
               />
@@ -59,6 +60,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getTables, getOnSaleDishes, getCategories, scanOrder } from '../api/modules'
+import { ORDER_LIMITS } from '../utils/constants'
 
 const tables = ref([])
 const dishes = ref([])
@@ -101,10 +103,23 @@ onMounted(async () => {
 })
 
 const onCount = (dish, v) => {
-  if (v <= 0) {
+  const amount = Number(v)
+  if (!Number.isInteger(amount) || amount < 0) {
+    ElMessage.warning('菜品数量不合法')
+    return
+  }
+  if (amount > ORDER_LIMITS.maxAmountPerDish) {
+    ElMessage.warning(`单个菜品最多 ${ORDER_LIMITS.maxAmountPerDish} 份`)
+    return
+  }
+  if (amount <= 0) {
     delete cart.value[dish.id]
   } else {
-    cart.value[dish.id] = { dish, amount: v }
+    if (!cart.value[dish.id] && Object.keys(cart.value).length >= ORDER_LIMITS.maxKinds) {
+      ElMessage.warning(`一次最多选择 ${ORDER_LIMITS.maxKinds} 种菜品`)
+      return
+    }
+    cart.value[dish.id] = { dish, amount }
   }
 }
 
@@ -113,6 +128,10 @@ const onSubmit = async () => {
     dishId: dish.id,
     amount,
   }))
+  if (items.length === 0 || items.length > ORDER_LIMITS.maxKinds || items.some((item) => item.amount < 1 || item.amount > ORDER_LIMITS.maxAmountPerDish)) {
+    ElMessage.warning('菜品数量或种类数不符合要求')
+    return
+  }
   submitting.value = true
   try {
     // 员工代下单：不传 userId（订单归属桌台，金额由后端重算）
