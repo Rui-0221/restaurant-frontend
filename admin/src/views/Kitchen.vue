@@ -60,6 +60,7 @@ import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../store/auth'
 import { getOrders, changeOrderStatus } from '../api/modules'
 import { ORDER_STATUS, formatTime } from '../utils/constants'
+import { createKitchenLifecycle } from '../services/kitchenLifecycle'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -100,10 +101,8 @@ const startCooking = async (o) => {
 
 // ---------- WebSocket ----------
 let ws = null
-let reconnectTimer = null
-let heartbeatTimer = null
-let pollingTimer = null
 let isUnmounted = false
+const lifecycle = createKitchenLifecycle()
 
 const connectWs = () => {
   if (isUnmounted) return
@@ -142,8 +141,7 @@ const connectWs = () => {
 // 断线 3 秒后重连
 const scheduleReconnect = () => {
   if (isUnmounted) return
-  clearTimeout(reconnectTimer)
-  reconnectTimer = setTimeout(() => {
+  lifecycle.scheduleReconnect(() => {
     if (!isUnmounted && auth.isLogin) connectWs()
   }, 3000)
 }
@@ -186,16 +184,12 @@ onMounted(() => {
   loadOrders()
   connectWs()
   tick()
-  heartbeatTimer = setInterval(tick, 1000) // 每秒刷新时钟与经过时长
-  pollingTimer = setInterval(loadOrders, 30000) // 30s 兜底轮询，防消息丢失
+  lifecycle.start(tick, loadOrders)
 })
 
 onBeforeUnmount(() => {
   isUnmounted = true
-  clearTimeout(reconnectTimer)
-  clearInterval(heartbeatTimer)
-  clearInterval(pollingTimer)
-  ws?.close()
+  lifecycle.dispose(ws)
 })
 </script>
 
