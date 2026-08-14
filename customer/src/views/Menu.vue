@@ -16,9 +16,9 @@
       </van-tabs>
     </div>
 
-    <div class="dish-grid">
-      <div v-for="dish in filteredDishes" :key="dish.id" class="dish-card card">
-        <div class="dish-img" :style="imgStyle(dish)">
+    <div class="dish-list">
+      <article v-for="dish in filteredDishes" :key="dish.id" class="dish-card card">
+        <div class="dish-img" :style="imgStyle(dish)" aria-hidden="true">
           <span>{{ dish.name.charAt(0) }}</span>
         </div>
         <div class="dish-info">
@@ -34,7 +34,7 @@
             />
           </div>
         </div>
-      </div>
+      </article>
     </div>
 
     <van-empty v-if="filteredDishes.length === 0" description="暂无在售菜品" />
@@ -111,7 +111,7 @@ const goProfile = () => router.push('/profile')
 <style scoped>
 .menu-page {
   min-height: 100vh;
-  padding-bottom: 60px;
+  padding-bottom: 72px;
 }
 
 .profile-entry {
@@ -132,27 +132,29 @@ const goProfile = () => router.push('/profile')
 }
 
 .tab-wrap {
-  background: #fff;
+  background: var(--surface);
   position: sticky;
   top: 0;
   z-index: 10;
+  box-shadow: 0 1px 0 var(--border-subtle);
 }
 
-.dish-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 12px;
+.dish-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
 }
 
 .dish-card {
   overflow: hidden;
   display: flex;
-  flex-direction: column;
+  min-height: 116px;
 }
 
 .dish-img {
-  height: 110px;
+  width: 108px;
+  flex: 0 0 108px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -171,7 +173,8 @@ const goProfile = () => router.push('/profile')
 }
 
 .dish-info {
-  padding: 10px 12px 12px;
+  min-width: 0;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -180,6 +183,7 @@ const goProfile = () => router.push('/profile')
 .dish-name {
   font-size: 15px;
   font-weight: 600;
+  line-height: 1.35;
 }
 
 .dish-desc {
@@ -187,16 +191,19 @@ const goProfile = () => router.push('/profile')
   color: var(--text-sub);
   margin-top: 4px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.45;
 }
 
 .dish-bottom {
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: var(--space-2);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .price {
