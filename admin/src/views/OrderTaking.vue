@@ -67,6 +67,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getTables, getOnSaleDishes, getCategories, getActiveOrderByTable, scanOrder } from '../api/modules'
+import { resolveTableOrderContext } from '../services/tableOrderContext'
 import { ORDER_LIMITS } from '../utils/constants'
 
 const tables = ref([])
@@ -122,15 +123,7 @@ const loadTableContext = async (selectedId = tableId.value) => {
     if (requestId !== contextRequestId || selectedId !== tableId.value) return
 
     const table = tables.value.find((item) => item.id === selectedId)
-    if (order) {
-      tableContext.value = table?.status === 0
-        ? { kind: 'inconsistent', message: `桌台显示空闲，但存在活跃订单 #${order.id}；请刷新桌台状态或联系管理员` }
-        : { kind: 'busy', message: `将追加到活跃订单 #${order.id}` }
-    } else if (table?.status === 1) {
-      tableContext.value = { kind: 'warning', message: '桌台显示占用但没有活跃订单；提交将创建新订单' }
-    } else {
-      tableContext.value = { kind: 'free', message: '该桌空闲，提交将创建新订单' }
-    }
+    tableContext.value = resolveTableOrderContext(table, order)
   } catch {
     if (requestId === contextRequestId && selectedId === tableId.value) {
       tableContext.value = { kind: 'error', message: '无法确认桌台订单状态，请重试后再提交' }
