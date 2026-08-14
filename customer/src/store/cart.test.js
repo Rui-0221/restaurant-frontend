@@ -26,7 +26,10 @@ describe('cart store', () => {
   it('拒绝超过单菜数量和菜品种类上限的修改', () => {
     const cart = useCartStore()
     expect(cart.setItemAmount(dish(1), ORDER_LIMITS.maxAmountPerDish)).toEqual({ ok: true })
-    expect(cart.addItem(dish(1))).toEqual({ ok: false, message: `单个菜品最多 ${ORDER_LIMITS.maxAmountPerDish} 份` })
+    expect(cart.addItem(dish(1))).toEqual({
+      ok: false,
+      message: `单个菜品最多 ${ORDER_LIMITS.maxAmountPerDish} 份`,
+    })
 
     for (let id = 2; id <= ORDER_LIMITS.maxKinds; id += 1) {
       expect(cart.addItem(dish(id))).toEqual({ ok: true })

@@ -42,7 +42,7 @@ request.interceptors.response.use(
       showToast(msg || '网络异常，请稍后重试')
     }
     return Promise.reject(error)
-  }
+  },
 )
 
 export default request

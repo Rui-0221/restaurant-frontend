@@ -36,7 +36,9 @@
       <template v-else>
         <div class="mode-badge add">➕ 加菜模式</div>
         <div class="tip">
-          本桌已有订单 #{{ activeOrder.id }}（{{ ORDER_STATUS_TEXT(activeOrder.status) }}），可继续加菜
+          本桌已有订单 #{{ activeOrder.id }}（{{
+            ORDER_STATUS_TEXT(activeOrder.status)
+          }}），可继续加菜
         </div>
         <div class="order-summary card">
           <div class="sum-row">
@@ -66,15 +68,12 @@
           label="手机号"
           placeholder="请输入手机号"
         />
-        <van-field
-          v-model="form.password"
-          type="password"
-          label="密码"
-          placeholder="请输入密码"
-        />
+        <van-field v-model="form.password" type="password" label="密码" placeholder="请输入密码" />
       </van-cell-group>
       <div class="login-actions">
-        <van-button type="primary" block round :loading="logging" @click="onLogin">登 录</van-button>
+        <van-button type="primary" block round :loading="logging" @click="onLogin"
+          >登 录</van-button
+        >
         <div class="go-register" @click="goRegister">没有账号？去注册</div>
       </div>
     </van-popup>

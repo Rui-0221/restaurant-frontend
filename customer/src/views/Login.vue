@@ -15,12 +15,7 @@
           label="手机号"
           placeholder="请输入手机号"
         />
-        <van-field
-          v-model="form.password"
-          type="password"
-          label="密码"
-          placeholder="请输入密码"
-        />
+        <van-field v-model="form.password" type="password" label="密码" placeholder="请输入密码" />
       </van-cell-group>
 
       <div class="actions">

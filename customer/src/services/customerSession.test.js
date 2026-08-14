@@ -18,7 +18,9 @@ describe('loginAndLoadProfile', () => {
       return { id: 1, name: '顾客' }
     })
 
-    await expect(loginAndLoadProfile({ phone: '13800000000', password: 'secret' })).resolves.toEqual({
+    await expect(
+      loginAndLoadProfile({ phone: '13800000000', password: 'secret' }),
+    ).resolves.toEqual({
       token: 'token-123',
       userInfo: { id: 1, name: '顾客' },
     })
@@ -30,7 +32,9 @@ describe('loginAndLoadProfile', () => {
     login.mockResolvedValue('token-123')
     getMe.mockRejectedValue(error)
 
-    await expect(loginAndLoadProfile({ phone: '13800000000', password: 'secret' })).rejects.toBe(error)
+    await expect(loginAndLoadProfile({ phone: '13800000000', password: 'secret' })).rejects.toBe(
+      error,
+    )
     expect(clearToken).toHaveBeenCalledOnce()
   })
 })

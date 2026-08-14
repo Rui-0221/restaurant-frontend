@@ -8,8 +8,19 @@
     <div class="auth-form">
       <van-cell-group inset>
         <van-field v-model="form.name" label="昵称" placeholder="请输入昵称" />
-        <van-field v-model="form.phone" type="tel" maxlength="11" label="手机号" placeholder="请输入手机号" />
-        <van-field v-model="form.password" type="password" label="密码" placeholder="请输入密码（6位以上）" />
+        <van-field
+          v-model="form.phone"
+          type="tel"
+          maxlength="11"
+          label="手机号"
+          placeholder="请输入手机号"
+        />
+        <van-field
+          v-model="form.password"
+          type="password"
+          label="密码"
+          placeholder="请输入密码（6位以上）"
+        />
       </van-cell-group>
 
       <div class="actions">
@@ -65,7 +76,9 @@ const onRegister = async () => {
     const me = await getMe()
     userStore.setLogin(token, me)
     showToast('注册成功')
-    router.replace(route.query.redirect || (cartStore.tableId ? `/table/${cartStore.tableId}` : '/menu'))
+    router.replace(
+      route.query.redirect || (cartStore.tableId ? `/table/${cartStore.tableId}` : '/menu'),
+    )
   } catch {
     // 拦截器已提示
   } finally {

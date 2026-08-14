@@ -28,7 +28,13 @@
       </div>
       <div v-else class="card empty-order">
         <span>暂无进行中的订单</span>
-        <van-button size="small" type="primary" round @click="router.push(`/table/${cartStore.tableId}`)">去点餐</van-button>
+        <van-button
+          size="small"
+          type="primary"
+          round
+          @click="router.push(`/table/${cartStore.tableId}`)"
+          >去点餐</van-button
+        >
       </div>
     </template>
     <van-empty v-else description="未关联桌台" />
@@ -53,7 +59,9 @@
 
     <!-- 退出登录 -->
     <div class="actions">
-      <van-button block round size="large" class="logout-btn" @click="onLogout">退出登录</van-button>
+      <van-button block round size="large" class="logout-btn" @click="onLogout"
+        >退出登录</van-button
+      >
     </div>
   </div>
 </template>
