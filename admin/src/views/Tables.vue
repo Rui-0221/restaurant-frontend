@@ -1,5 +1,13 @@
 <template>
   <div class="page">
+    <div class="page-header">
+      <div>
+        <h1>桌台管理</h1>
+        <p>查看桌台容量、订单进度并生成顾客点餐二维码</p>
+      </div>
+      <el-button :loading="loading" @click="load">刷新桌台</el-button>
+    </div>
+
     <div class="toolbar">
       <span class="total-tip">共 {{ list.length }} 张桌台</span>
       <el-button v-if="auth.isAdmin" type="primary" :icon="Plus" @click="openForm()">
@@ -7,8 +15,13 @@
       </el-button>
     </div>
 
-    <div class="table-grid">
-      <div v-for="t in list" :key="t.id" class="table-card" :class="{ occupied: t.status === 1 }">
+    <div v-loading="loading" class="table-grid">
+      <div
+        v-for="t in tableCards"
+        :key="t.id"
+        class="table-card"
+        :class="{ occupied: t.status === 1, warning: t.orderState.kind === 'warning' }"
+      >
         <div class="card-top">
           <span class="table-name">{{ t.name }}</span>
           <el-tag :type="TABLE_STATUS[t.status]?.type" size="small" effect="dark">
@@ -16,8 +29,12 @@
           </el-tag>
         </div>
         <div class="card-mid">
-          <span>🪑 容量 {{ t.capacity }} 人</span>
+          <span>容量 {{ t.capacity }} 人</span>
           <span class="table-id">#{{ t.id }}</span>
+        </div>
+        <div class="order-state" :class="t.orderState.kind">
+          <span>{{ t.orderState.title }}</span>
+          <span>{{ t.orderState.detail }}</span>
         </div>
         <div class="card-actions">
           <el-button size="small" @click="showQr(t)">二维码</el-button>
@@ -68,17 +85,26 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import QRCode from 'qrcode'
-import { getTables, addTable, updateTable, deleteTable } from '../api/modules'
+import { getTables, addTable, updateTable, deleteTable, getActiveOrderByTable } from '../api/modules'
 import { useAuthStore } from '../store/auth'
 import { TABLE_STATUS } from '../utils/constants'
+import { describeTableCard } from '../services/tableCardState'
 
 const auth = useAuthStore()
 const list = ref([])
+const activeOrders = ref({})
 const loading = ref(false)
+
+const tableCards = computed(() =>
+  list.value.map((table) => ({
+    ...table,
+    orderState: describeTableCard(table, activeOrders.value[table.id]),
+  })),
+)
 
 const dialogVisible = ref(false)
 const saving = ref(false)
@@ -93,7 +119,18 @@ const qrLocalOnly = ref(false) // 通过 localhost 打开时手机不可访问�
 const load = async () => {
   loading.value = true
   try {
-    list.value = (await getTables()) || []
+    const tables = (await getTables()) || []
+    list.value = tables
+    const activeOrderEntries = await Promise.all(
+      tables.map(async (table) => {
+        try {
+          return [table.id, await getActiveOrderByTable(table.id)]
+        } catch {
+          return [table.id, null]
+        }
+      }),
+    )
+    activeOrders.value = Object.fromEntries(activeOrderEntries)
   } catch {
     // 拦截器已提示
   } finally {
@@ -173,8 +210,27 @@ onMounted(load)
   margin-bottom: 14px;
 }
 
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.page-header h1 {
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.page-header p {
+  margin-top: 6px;
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
 .total-tip {
-  color: #909399;
+  color: var(--text-sub);
   font-size: 14px;
 }
 
@@ -197,8 +253,13 @@ onMounted(load)
 }
 
 .table-card.occupied {
-  border-color: #f56c6c;
-  background: #fef7f7;
+  border-color: #f1c1b5;
+  background: #fffaf8;
+}
+
+.table-card.warning {
+  border-color: #ead6a2;
+  background: #fffdf6;
 }
 
 .card-top {
@@ -216,12 +277,37 @@ onMounted(load)
   display: flex;
   justify-content: space-between;
   margin: 12px 0;
-  color: #909399;
+  color: var(--text-sub);
   font-size: 13px;
 }
 
 .table-id {
   color: #c0c4cc;
+}
+
+.order-state {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f4f7f5;
+  color: #5b8e65;
+  font-size: 12px;
+}
+
+.order-state span:last-child {
+  color: var(--text-sub);
+}
+
+.order-state.active {
+  background: #fff1ec;
+  color: var(--brand-color);
+}
+
+.order-state.warning {
+  background: #fff6df;
+  color: #ad7c17;
 }
 
 .card-actions {
@@ -273,5 +359,13 @@ onMounted(load)
   color: #c0c4cc;
   font-size: 12px;
   word-break: break-all;
+}
+
+@media (max-width: 768px) {
+  .page-header,
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 </style>
