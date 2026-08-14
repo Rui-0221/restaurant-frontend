@@ -27,7 +27,7 @@
         </el-form-item>
       </el-form>
 
-      <div class="hint">
+      <div v-if="isDev" class="hint">
         演示账号：admin/123456（管理员）· waiter/123456（服务员）· chef/123456（后厨）
       </div>
     </div>
@@ -48,6 +48,7 @@ const auth = useAuthStore()
 
 const form = reactive({ username: '', password: '' })
 const loading = ref(false)
+const isDev = import.meta.env.DEV
 
 const onLogin = async () => {
   if (!form.username || !form.password) {
