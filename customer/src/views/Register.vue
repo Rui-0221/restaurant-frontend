@@ -1,11 +1,6 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-hero">
-      <div class="logo">🍜</div>
-      <h2>注册</h2>
-    </div>
-
-    <div class="auth-form">
+  <AuthShell title="创建账号" description="注册后即可保存订单记录并快速加菜">
+    <form class="auth-form" @submit.prevent="onRegister">
       <van-cell-group inset>
         <van-field v-model="form.name" label="昵称" placeholder="请输入昵称" />
         <van-field
@@ -24,13 +19,13 @@
       </van-cell-group>
 
       <div class="actions">
-        <van-button type="primary" block round :loading="loading" @click="onRegister">
+        <van-button type="primary" block round native-type="submit" :loading="loading">
           注册并登录
         </van-button>
-        <div class="go-register" @click="goLogin">已有账号？去登录</div>
+        <p class="auth-switch">已有账号？<button type="button" @click="goLogin">去登录</button></p>
       </div>
-    </div>
-  </div>
+    </form>
+  </AuthShell>
 </template>
 
 <script setup>
@@ -39,8 +34,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useUserStore } from '../store/user'
 import { useCartStore } from '../store/cart'
-import { setToken } from '../utils/storage'
-import { register, login, getMe } from '../api/user'
+import { register } from '../api/user'
+import { loginAndLoadProfile } from '../services/customerSession'
+import AuthShell from '../components/AuthShell.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -71,10 +67,11 @@ const onRegister = async () => {
       password: form.password,
     })
     // 注册成功后自动登录
-    const token = await login({ phone: form.phone, password: form.password })
-    setToken(token) // 先写入 token，getMe 请求才能携带 Authorization（否则后端 401）
-    const me = await getMe()
-    userStore.setLogin(token, me)
+    const { token, userInfo } = await loginAndLoadProfile({
+      phone: form.phone,
+      password: form.password,
+    })
+    userStore.setLogin(token, userInfo)
     showToast('注册成功')
     router.replace(
       route.query.redirect || (cartStore.tableId ? `/table/${cartStore.tableId}` : '/menu'),
@@ -90,40 +87,27 @@ const goLogin = () => router.push({ path: '/login', query: { redirect: route.que
 </script>
 
 <style scoped>
-.auth-page {
-  min-height: 100vh;
-  background: #fff;
-}
-
-.auth-hero {
-  background: linear-gradient(160deg, #ff9a6c 0%, #e54d2e 100%);
-  color: #fff;
-  padding: 56px 24px 40px;
-  text-align: center;
-}
-
-.logo {
-  font-size: 44px;
-}
-
-.auth-hero h2 {
-  margin-top: 8px;
-  font-size: 22px;
-  letter-spacing: 2px;
-}
-
 .auth-form {
-  margin-top: 32px;
+  display: block;
 }
 
 .actions {
-  margin: 32px 24px 0;
+  margin: var(--space-6) var(--space-4) 0;
 }
 
-.go-register {
+.auth-switch {
   text-align: center;
-  margin-top: 20px;
-  color: var(--brand-color);
+  margin-top: var(--space-5);
+  color: var(--text-sub);
   font-size: 14px;
+}
+
+.auth-switch button {
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--brand-color);
+  font: inherit;
 }
 </style>

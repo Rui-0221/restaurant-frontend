@@ -1,12 +1,6 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-hero">
-      <div class="logo">🍜</div>
-      <h2>登录</h2>
-      <p class="auth-tip">登录后才能点餐</p>
-    </div>
-
-    <div class="auth-form">
+  <AuthShell title="登录点餐" description="登录后即可查看订单并继续点餐">
+    <form class="auth-form" @submit.prevent="onLogin">
       <van-cell-group inset>
         <van-field
           v-model="form.phone"
@@ -19,13 +13,15 @@
       </van-cell-group>
 
       <div class="actions">
-        <van-button type="primary" block round :loading="loading" @click="onLogin">
+        <van-button type="primary" block round native-type="submit" :loading="loading">
           登 录
         </van-button>
-        <div class="go-register" @click="goRegister">没有账号？去注册</div>
+        <p class="auth-switch">
+          还没有账号？<button type="button" @click="goRegister">去注册</button>
+        </p>
       </div>
-    </div>
-  </div>
+    </form>
+  </AuthShell>
 </template>
 
 <script setup>
@@ -35,6 +31,7 @@ import { showToast } from 'vant'
 import { useUserStore } from '../store/user'
 import { useCartStore } from '../store/cart'
 import { loginAndLoadProfile } from '../services/customerSession'
+import AuthShell from '../components/AuthShell.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -74,46 +71,27 @@ const goRegister = () =>
 </script>
 
 <style scoped>
-.auth-page {
-  min-height: 100vh;
-  background: #fff;
-}
-
-.auth-hero {
-  background: linear-gradient(160deg, #ff9a6c 0%, #e54d2e 100%);
-  color: #fff;
-  padding: 56px 24px 40px;
-  text-align: center;
-}
-
-.logo {
-  font-size: 44px;
-}
-
-.auth-hero h2 {
-  margin-top: 8px;
-  font-size: 22px;
-  letter-spacing: 2px;
-}
-
-.auth-tip {
-  margin-top: 8px;
-  font-size: 13px;
-  opacity: 0.85;
-}
-
 .auth-form {
-  margin-top: 32px;
+  display: block;
 }
 
 .actions {
-  margin: 32px 24px 0;
+  margin: var(--space-6) var(--space-4) 0;
 }
 
-.go-register {
+.auth-switch {
   text-align: center;
-  margin-top: 20px;
-  color: var(--brand-color);
+  margin-top: var(--space-5);
+  color: var(--text-sub);
   font-size: 14px;
+}
+
+.auth-switch button {
+  min-height: var(--tap-target-min);
+  padding: 0 var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--brand-color);
+  font: inherit;
 }
 </style>
