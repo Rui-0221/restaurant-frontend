@@ -20,9 +20,6 @@
           <span class="table-id">#{{ t.id }}</span>
         </div>
         <div class="card-actions">
-          <el-button size="small" :type="t.status === 1 ? 'success' : 'danger'" @click="toggleStatus(t)">
-            {{ t.status === 1 ? '清台' : '占用' }}
-          </el-button>
           <el-button size="small" @click="showQr(t)">二维码</el-button>
           <el-button v-if="auth.isAdmin" size="small" link type="primary" @click="openForm(t)">编辑</el-button>
           <el-button v-if="auth.isAdmin" size="small" link type="danger" @click="remove(t)">删除</el-button>
@@ -75,7 +72,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import QRCode from 'qrcode'
-import { getTables, addTable, updateTable, deleteTable, changeTableStatus } from '../api/modules'
+import { getTables, addTable, updateTable, deleteTable } from '../api/modules'
 import { useAuthStore } from '../store/auth'
 import { TABLE_STATUS } from '../utils/constants'
 
@@ -143,18 +140,6 @@ const remove = async (row) => {
     load()
   } catch {
     // 拦截器已提示（如有活跃订单会拒绝）
-  }
-}
-
-// 手动改桌台状态（清台兜底），所有员工可操作
-const toggleStatus = async (row) => {
-  const target = row.status === 1 ? 0 : 1
-  try {
-    await changeTableStatus(row.id, target)
-    ElMessage.success(target === 1 ? `桌台 ${row.name} 已占用` : `桌台 ${row.name} 已清台`)
-    load()
-  } catch {
-    // 拦截器已提示（CAS 冲突等）
   }
 }
 

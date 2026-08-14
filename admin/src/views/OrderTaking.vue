@@ -87,19 +87,26 @@ const filteredDishes = computed(() => {
   return dishes.value.filter((d) => d.categoryId === catId)
 })
 
+const loadTables = async () => {
+  try {
+    tables.value = (await getTables()) || []
+  } catch {
+    // 拦截器已提示
+  }
+}
+
 onMounted(async () => {
   try {
-    const [tableList, dishList, catList] = await Promise.all([
-      getTables().catch(() => []),
+    const [dishList, catList] = await Promise.all([
       getOnSaleDishes().catch(() => []),
       getCategories().catch(() => []),
     ])
-    tables.value = tableList || []
     dishes.value = dishList || []
     categories.value = catList || []
   } catch {
     // 拦截器已提示
   }
+  await loadTables()
 })
 
 const onCount = (dish, v) => {
@@ -138,6 +145,7 @@ const onSubmit = async () => {
     const res = await scanOrder({ tableId: tableId.value, items })
     ElMessage.success(`下单成功：订单 #${res.id}，¥${Number(res.totalAmount).toFixed(2)}`)
     cart.value = {}
+    await loadTables()
   } catch {
     // 拦截器已提示
   } finally {
