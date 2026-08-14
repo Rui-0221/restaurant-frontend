@@ -5,7 +5,14 @@
       <div class="toolbar">
         <div class="toolbar-left">
           <span class="label">桌台</span>
-          <el-select v-model="tableId" placeholder="请选择桌台" style="width: 220px" clearable>
+          <el-select
+            v-model="tableId"
+            placeholder="请选择桌台"
+            style="width: 220px"
+            clearable
+            :loading="contextLoading"
+            @change="loadTableContext"
+          >
             <el-option
               v-for="t in tables"
               :key="t.id"
@@ -13,8 +20,8 @@
               :value="t.id"
             />
           </el-select>
-          <span v-if="selectedTable" class="table-tip" :class="selectedTable.status === 0 ? 'free' : 'busy'">
-            {{ selectedTable.status === 0 ? '该桌空闲，提交将创建新订单' : '该桌已有订单，提交将自动加菜' }}
+          <span v-if="tableContext.message" class="table-tip" :class="tableContext.kind">
+            {{ tableContext.message }}
           </span>
         </div>
         <div class="toolbar-right">
@@ -59,7 +66,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getTables, getOnSaleDishes, getCategories, scanOrder } from '../api/modules'
+import { getTables, getOnSaleDishes, getCategories, getActiveOrderByTable, scanOrder } from '../api/modules'
 import { ORDER_LIMITS } from '../utils/constants'
 
 const tables = ref([])
@@ -68,6 +75,9 @@ const categories = ref([])
 const tableId = ref(null)
 const activeTab = ref('all')
 const submitting = ref(false)
+const contextLoading = ref(false)
+const tableContext = ref({ kind: '', message: '' })
+let contextRequestId = 0
 
 // 购物车：dishId -> { dish, amount }
 const cart = ref({})
@@ -79,7 +89,9 @@ const cartCount = computed(() =>
 const cartTotal = computed(() =>
   Object.values(cart.value).reduce((sum, item) => sum + item.amount * Number(item.dish.price), 0)
 )
-const canSubmit = computed(() => !!tableId.value && cartCount.value > 0 && !submitting.value)
+const canSubmit = computed(() =>
+  !!tableId.value && cartCount.value > 0 && !submitting.value && !contextLoading.value && !['error', 'inconsistent'].includes(tableContext.value.kind)
+)
 
 const filteredDishes = computed(() => {
   if (activeTab.value === 'all') return dishes.value
@@ -92,6 +104,39 @@ const loadTables = async () => {
     tables.value = (await getTables()) || []
   } catch {
     // 拦截器已提示
+  }
+}
+
+const loadTableContext = async (selectedId = tableId.value) => {
+  const requestId = ++contextRequestId
+  if (!selectedId) {
+    contextLoading.value = false
+    tableContext.value = { kind: '', message: '' }
+    return
+  }
+
+  contextLoading.value = true
+  tableContext.value = { kind: '', message: '正在查询该桌的活跃订单…' }
+  try {
+    const order = await getActiveOrderByTable(selectedId)
+    if (requestId !== contextRequestId || selectedId !== tableId.value) return
+
+    const table = tables.value.find((item) => item.id === selectedId)
+    if (order) {
+      tableContext.value = table?.status === 0
+        ? { kind: 'inconsistent', message: `桌台显示空闲，但存在活跃订单 #${order.id}；请刷新桌台状态或联系管理员` }
+        : { kind: 'busy', message: `将追加到活跃订单 #${order.id}` }
+    } else if (table?.status === 1) {
+      tableContext.value = { kind: 'warning', message: '桌台显示占用但没有活跃订单；提交将创建新订单' }
+    } else {
+      tableContext.value = { kind: 'free', message: '该桌空闲，提交将创建新订单' }
+    }
+  } catch {
+    if (requestId === contextRequestId && selectedId === tableId.value) {
+      tableContext.value = { kind: 'error', message: '无法确认桌台订单状态，请重试后再提交' }
+    }
+  } finally {
+    if (requestId === contextRequestId) contextLoading.value = false
   }
 }
 
@@ -139,13 +184,17 @@ const onSubmit = async () => {
     ElMessage.warning('菜品数量或种类数不符合要求')
     return
   }
+  if (tableContext.value.kind === 'error') {
+    ElMessage.warning('请先确认桌台订单状态')
+    return
+  }
   submitting.value = true
   try {
-    // 员工代下单：不传 userId（订单归属桌台，金额由后端重算）
+    // 后端在同一事务内按桌台的实时活跃订单决定创建或追加，避免前端状态过期导致误判。
     const res = await scanOrder({ tableId: tableId.value, items })
     ElMessage.success(`下单成功：订单 #${res.id}，¥${Number(res.totalAmount).toFixed(2)}`)
     cart.value = {}
-    await loadTables()
+    await Promise.all([loadTables(), loadTableContext(tableId.value)])
   } catch {
     // 拦截器已提示
   } finally {
@@ -189,6 +238,18 @@ const onSubmit = async () => {
 
 .table-tip.busy {
   color: #e6a23c;
+}
+
+.table-tip.warning {
+  color: #e6a23c;
+}
+
+.table-tip.error {
+  color: #f56c6c;
+}
+
+.table-tip.inconsistent {
+  color: #f56c6c;
 }
 
 .toolbar-right {

@@ -34,6 +34,7 @@ export const changeTableStatus = (id, status) =>
 export const getOrders = (page = 1, size = 20) =>
   request.get('/orders', { params: { page, size } })
 export const getOrder = (id) => request.get(`/orders/${id}`)
+export const getActiveOrderByTable = (tableId) => request.get(`/orders/table/${tableId}/active`)
 export const changeOrderStatus = (id, status) =>
   request.put(`/orders/${id}/status`, null, { params: { status } })
 export const getTodayStatistics = () => request.get('/orders/statistics/today')
