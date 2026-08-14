@@ -1,5 +1,12 @@
 <template>
-  <div class="order-taking">
+  <div class="page order-taking">
+    <div class="page-header">
+      <div>
+        <h1>帮顾客点餐</h1>
+        <p>确认桌台订单状态后，为顾客创建订单或追加菜品</p>
+      </div>
+    </div>
+
     <!-- 顶部：桌台选择 + 提交栏 -->
     <el-card shadow="never" class="toolbar-card">
       <div class="toolbar">
@@ -7,8 +14,8 @@
           <span class="label">桌台</span>
           <el-select
             v-model="tableId"
+            class="table-select"
             placeholder="请选择桌台"
-            style="width: 220px"
             clearable
             :loading="contextLoading"
             @change="loadTableContext"
@@ -20,13 +27,18 @@
               :value="t.id"
             />
           </el-select>
-          <span v-if="tableContext.message" class="table-tip" :class="tableContext.kind">
+          <el-tag
+            v-if="tableContext.message"
+            class="table-tip"
+            :type="contextTagType"
+            effect="plain"
+          >
             {{ tableContext.message }}
-          </span>
+          </el-tag>
         </div>
         <div class="toolbar-right">
           <span v-if="cartCount > 0" class="cart-summary"
-            >已选 {{ cartCount }} 项，合计 ¥{{ cartTotal.toFixed(2) }}</span
+            >已选 {{ cartCount }} 份，预估 ¥{{ cartTotal.toFixed(2) }}</span
           >
           <el-button type="primary" :disabled="!canSubmit" :loading="submitting" @click="onSubmit">
             提交订单
@@ -46,7 +58,7 @@
         <el-col
           v-for="dish in filteredDishes"
           :key="dish.id"
-          :xs="12"
+          :xs="24"
           :sm="8"
           :md="6"
           class="dish-col"
@@ -113,6 +125,12 @@ const canSubmit = computed(
     !contextLoading.value &&
     !['error', 'inconsistent'].includes(tableContext.value.kind),
 )
+const contextTagType = computed(() => {
+  if (tableContext.value.kind === 'free') return 'success'
+  if (['busy', 'warning'].includes(tableContext.value.kind)) return 'warning'
+  if (['error', 'inconsistent'].includes(tableContext.value.kind)) return 'danger'
+  return 'info'
+})
 
 const filteredDishes = computed(() => {
   if (activeTab.value === 'all') return dishes.value
@@ -223,6 +241,8 @@ const onSubmit = async () => {
 <style scoped>
 .toolbar-card {
   margin-bottom: 12px;
+  border: 1px solid #edf0f2;
+  border-radius: 12px;
 }
 
 .toolbar {
@@ -236,7 +256,27 @@ const onSubmit = async () => {
 .toolbar-left {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
+}
+
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-header h1 {
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.page-header p {
+  margin-top: 6px;
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
+.table-select {
+  width: 220px;
 }
 
 .label {
@@ -246,27 +286,10 @@ const onSubmit = async () => {
 }
 
 .table-tip {
-  font-size: 13px;
-}
-
-.table-tip.free {
-  color: #67c23a;
-}
-
-.table-tip.busy {
-  color: #e6a23c;
-}
-
-.table-tip.warning {
-  color: #e6a23c;
-}
-
-.table-tip.error {
-  color: #f56c6c;
-}
-
-.table-tip.inconsistent {
-  color: #f56c6c;
+  height: auto;
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.45;
 }
 
 .toolbar-right {
@@ -277,11 +300,14 @@ const onSubmit = async () => {
 
 .cart-summary {
   font-size: 14px;
-  color: #303133;
+  color: var(--text-main);
+  font-weight: 600;
 }
 
 .dish-card-wrap {
   min-height: 400px;
+  border: 1px solid #edf0f2;
+  border-radius: 12px;
 }
 
 .dish-col {
@@ -290,12 +316,20 @@ const onSubmit = async () => {
 
 .dish-card {
   border: 1px solid #e6e8eb;
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 14px;
   background: #fff;
   height: 100%;
   display: flex;
   flex-direction: column;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.dish-card:hover {
+  border-color: #f0b29f;
+  box-shadow: 0 5px 14px rgb(51 59 67 / 8%);
 }
 
 .dish-name {
@@ -325,5 +359,16 @@ const onSubmit = async () => {
   font-size: 16px;
   color: #f56c6c;
   font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .table-select {
+    width: 100%;
+  }
 }
 </style>
