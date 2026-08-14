@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { showToast } from 'vant'
 import { getToken, clearToken } from '../utils/storage'
+import { notifyCustomerUnauthorized } from '../utils/unauthorized'
 
 const request = axios.create({
   baseURL: '/api',
@@ -31,6 +32,7 @@ request.interceptors.response.use(
     const msg = error.response?.data?.msg
     if (status === 401) {
       clearToken()
+      notifyCustomerUnauthorized()
       showToast('登录已过期，请重新登录')
       // 顾客端统一回落地页，避免游客误入受限页面
       if (!location.hash.includes('/login')) {
