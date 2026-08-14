@@ -20,35 +20,41 @@
       <span v-else class="ticker-text muted">等待新订单…</span>
     </div>
 
-    <!-- 订单网格 -->
-    <div v-loading="loading" class="k-grid">
-      <div
-        v-for="o in activeOrders"
-        :key="o.id"
-        class="k-card"
-        :class="`st-${o.status}`"
-      >
-        <div class="k-card-head">
-          <span class="k-table">桌 {{ o.tableId }}</span>
-          <span class="k-status-tag">{{ ORDER_STATUS[o.status]?.label }}</span>
-          <span class="k-time">{{ elapsed(o.createTime) }}</span>
-        </div>
-        <div class="k-items">
-          <div v-for="d in o.details" :key="d.dishId" class="k-item">
-            <span>{{ d.dishName }}</span>
-            <span class="k-amount">×{{ d.amount }}</span>
+    <div v-loading="loading" class="k-queues">
+      <section v-for="queue in queueColumns" :key="queue.key" class="k-queue" :class="queue.key">
+        <header class="queue-header">
+          <div>
+            <span class="queue-eyebrow">{{ queue.eyebrow }}</span>
+            <h2>{{ queue.title }}</h2>
+          </div>
+          <span class="queue-count">{{ queue.orders.length }}</span>
+        </header>
+        <div class="k-grid">
+          <div v-for="o in queue.orders" :key="o.id" class="k-card" :class="`st-${o.status}`">
+            <div class="k-card-head">
+              <span class="k-table">桌 {{ o.tableId }}</span>
+              <span class="k-status-tag">{{ ORDER_STATUS[o.status]?.label }}</span>
+              <span class="k-time">{{ elapsed(o.createTime) }}</span>
+            </div>
+            <div class="k-items">
+              <div v-for="(d, index) in o.details" :key="`${d.dishId}-${d.price}-${index}`" class="k-item">
+                <span>{{ d.dishName }}</span><span class="k-amount">×{{ d.amount }}</span>
+              </div>
+            </div>
+            <div class="k-card-foot">
+              <el-button
+                v-if="o.status === 1"
+                type="primary"
+                size="small"
+                :loading="cookingOrderId === o.id"
+                @click="startCooking(o)"
+              >开始制作</el-button>
+              <span v-else class="k-total">¥{{ Number(o.totalAmount).toFixed(2) }}</span>
+            </div>
           </div>
         </div>
-        <div class="k-card-foot">
-          <el-button v-if="o.status === 1" type="primary" size="small" @click="startCooking(o)">
-            ▶ 开始制作
-          </el-button>
-          <span v-else class="k-total">¥{{ Number(o.totalAmount).toFixed(2) }}</span>
-        </div>
-      </div>
-    </div>
-    <div v-if="!loading && activeOrders.length === 0" class="k-empty">
-      🎉 暂无进行中的订单
+        <div v-if="!loading && queue.orders.length === 0" class="queue-empty">暂无{{ queue.title }}订单</div>
+      </section>
     </div>
   </div>
 </template>
@@ -61,6 +67,7 @@ import { useAuthStore } from '../store/auth'
 import { getOrders, changeOrderStatus } from '../api/modules'
 import { ORDER_STATUS, formatTime } from '../utils/constants'
 import { createKitchenLifecycle } from '../services/kitchenLifecycle'
+import { buildKitchenQueues } from '../services/kitchenQueues'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -70,14 +77,15 @@ const loading = ref(false)
 const wsConnected = ref(false)
 const notices = ref([])
 const now = ref('')
+const cookingOrderId = ref(null)
 
 // ---------- 订单数据 ----------
-// 只看活跃订单（1 待制作 → 2 制作中 → 3 上菜 → 4 用餐中），按状态优先级 + 下单时间排队
-const activeOrders = computed(() =>
-  [...list.value]
-    .filter((o) => [1, 2, 3, 4].includes(o.status))
-    .sort((a, b) => a.status - b.status || new Date(a.createTime) - new Date(b.createTime))
-)
+// 仅保留厨师真正需要处理的两类订单，避免上菜/用餐订单干扰工作队列。
+const queues = computed(() => buildKitchenQueues(list.value))
+const queueColumns = computed(() => [
+  { key: 'pending', eyebrow: '下一步处理', title: '待制作', orders: queues.value.pending },
+  { key: 'cooking', eyebrow: '正在进行', title: '制作中', orders: queues.value.cooking },
+])
 
 const loadOrders = async () => {
   try {
@@ -90,12 +98,15 @@ const loadOrders = async () => {
 
 // 开始制作（后厨角色唯一操作）
 const startCooking = async (o) => {
+  cookingOrderId.value = o.id
   try {
     await changeOrderStatus(o.id, 2)
     ElMessage.success(`订单 #${o.id} 开始制作`)
     loadOrders()
   } catch {
     // 拦截器已提示
+  } finally {
+    cookingOrderId.value = null
   }
 }
 
@@ -288,7 +299,26 @@ onBeforeUnmount(() => {
   }
 }
 
-/* 订单卡片网格 */
+/* 双工作队列：后厨仅看到待制作和制作中的订单。 */
+.k-queues {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.k-queue { min-width: 0; }
+
+.queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.queue-eyebrow { color: #8a93a3; font-size: 12px; }
+.queue-header h2 { margin-top: 2px; font-size: 18px; }
+.queue-count { min-width: 28px; padding: 3px 8px; border-radius: 12px; background: #303a49; color: #ffd666; text-align: center; font-weight: 700; }
+
 .k-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -310,13 +340,6 @@ onBeforeUnmount(() => {
   border-left-color: #409eff; /* 制作中 */
 }
 
-.k-card.st-3 {
-  border-left-color: #7ed321; /* 上菜 */
-}
-
-.k-card.st-4 {
-  border-left-color: #1989fa; /* 用餐中 */
-}
 
 .k-card-head {
   display: flex;
@@ -371,10 +394,16 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
-.k-empty {
+.queue-empty {
   text-align: center;
   color: #5a6474;
-  font-size: 18px;
-  padding: 80px 0;
+  font-size: 14px;
+  padding: 48px 0;
+  border: 1px dashed #3a4354;
+  border-radius: 10px;
+}
+
+@media (max-width: 900px) {
+  .k-queues { grid-template-columns: 1fr; }
 }
 </style>
