@@ -60,8 +60,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCartStore } from '../store/cart'
-import { getMyOrders, getTableActiveOrder } from '../api/order'
 import { ORDER_STATUS_TEXT, formatTime } from '../utils/constants'
+import { recoverOrderById } from '../services/orderRecovery'
 
 const route = useRoute()
 const router = useRouter()
@@ -96,17 +96,7 @@ const loadOrder = async () => {
   }
 
   try {
-    // 刷新后 Pinia 缓存会丢失，先从当前用户的历史订单中精确匹配路由 ID。
-    const myOrders = await getMyOrders()
-    order.value = (myOrders || []).find((item) => Number(item.id) === orderId) || null
-
-    // 同桌加菜的顾客可能不是首单用户，历史接口没有该订单；仅在已有扫码上下文且 ID 一致时兜底。
-    if (!order.value && cartStore.tableId) {
-      const activeOrder = await getTableActiveOrder(cartStore.tableId)
-      if (activeOrder && Number(activeOrder.id) === orderId) {
-        order.value = activeOrder
-      }
-    }
+    order.value = await recoverOrderById(orderId, cartStore.tableId)
   } catch {
     // 拦截器已提示
   } finally {
