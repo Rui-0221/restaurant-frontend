@@ -63,3 +63,42 @@ body {
   color: var(--brand-color);
   font-weight: 600;
 }
+
+/* 小屏后台保留导航入口，避免固定宽侧栏挤压订单与表格内容。 */
+@media (max-width: 768px) {
+  .aside {
+    width: 64px !important;
+  }
+
+  .aside .logo {
+    font-size: 0;
+  }
+
+  .aside .logo-icon {
+    font-size: 22px;
+  }
+
+  .aside .el-menu-item {
+    padding: 0 20px !important;
+  }
+
+  .aside .el-menu-item > span {
+    display: none;
+  }
+
+  .aside .el-menu-item .el-icon {
+    margin-right: 0;
+  }
+
+  .header {
+    padding: 0 12px;
+  }
+
+  .header .user-name {
+    display: none;
+  }
+
+  .page {
+    padding: 12px;
+  }
+}
