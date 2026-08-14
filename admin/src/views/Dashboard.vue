@@ -1,9 +1,19 @@
 <template>
   <div class="page">
+    <div class="page-header">
+      <div>
+        <h1>工作台</h1>
+        <p>快速了解餐厅当前运营情况</p>
+      </div>
+      <el-tag type="info" effect="plain">订单状态统计基于最近 {{ orderSampleLimit }} 笔</el-tag>
+    </div>
+
     <el-row :gutter="16">
       <el-col v-if="authStore.isAdmin" :xs="24" :sm="8">
         <div class="stat-card today">
-          <div class="stat-icon">💰</div>
+          <div class="stat-icon">
+            <el-icon><Money /></el-icon>
+          </div>
           <div>
             <div class="stat-label">今日营业额</div>
             <div class="stat-value">¥{{ revenue.toFixed(2) }}</div>
@@ -13,7 +23,9 @@
       </el-col>
       <el-col :xs="24" :sm="authStore.isAdmin ? 8 : 12">
         <div class="stat-card tables">
-          <div class="stat-icon">🪑</div>
+          <div class="stat-icon">
+            <el-icon><Grid /></el-icon>
+          </div>
           <div>
             <div class="stat-label">桌台概况</div>
             <div class="stat-value">
@@ -28,18 +40,27 @@
       </el-col>
       <el-col :xs="24" :sm="authStore.isAdmin ? 8 : 12">
         <div class="stat-card orders">
-          <div class="stat-icon">📋</div>
+          <div class="stat-icon">
+            <el-icon><Tickets /></el-icon>
+          </div>
           <div>
             <div class="stat-label">进行中订单</div>
             <div class="stat-value">{{ activeOrders }}</div>
-            <div class="stat-sub">待制作 · 制作中 · 上菜 · 用餐中</div>
+            <div class="stat-sub">最近 {{ orderSampleLimit }} 笔中的进行中订单</div>
           </div>
         </div>
       </el-col>
     </el-row>
 
     <el-card class="chart-card" shadow="never">
-      <template #header>订单状态分布</template>
+      <template #header>
+        <div class="chart-header">
+          <div>
+            <h2>订单状态分布</h2>
+            <p>仅统计最近 {{ orderSampleLimit }} 笔订单，不代表全量经营数据</p>
+          </div>
+        </div>
+      </template>
       <div ref="chartRef" class="chart"></div>
     </el-card>
   </div>
@@ -48,6 +69,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import * as echarts from 'echarts'
+import { Grid, Money, Tickets } from '@element-plus/icons-vue'
 import { getTodayStatistics, getOrders, getTables } from '../api/modules'
 import { useAuthStore } from '../store/auth'
 import { ORDER_STATUS } from '../utils/constants'
@@ -58,6 +80,7 @@ const revenue = ref(0)
 const todayDate = ref('')
 const tables = ref([])
 const orderList = ref([])
+const orderSampleLimit = 100
 
 const totalTables = computed(() => tables.value.length)
 const freeTables = computed(() => tables.value.filter((t) => t.status === 0).length)
@@ -73,7 +96,7 @@ const loadAll = async () => {
   const [stat, list, t] = await Promise.all([
     // 营业额仅管理员可见：非管理员不调用统计接口（后端也校验角色），避免报错提示
     authStore.isAdmin ? getTodayStatistics().catch(() => null) : Promise.resolve(null),
-    getOrders(1, 100).catch(() => null),
+    getOrders(1, orderSampleLimit).catch(() => null),
     getTables().catch(() => []),
   ])
   if (stat) {
@@ -126,22 +149,42 @@ onBeforeUnmount(() => {
 <style scoped>
 .stat-card {
   background: #fff;
-  border-radius: 8px;
+  min-height: 128px;
+  border: 1px solid #edf0f2;
+  border-radius: 12px;
   padding: 20px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.06);
+  box-shadow: 0 4px 14px rgb(45 54 63 / 5%);
   margin-bottom: 16px;
 }
 
 .stat-icon {
-  font-size: 36px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #fff2ed;
+  color: var(--brand-color);
+  font-size: 22px;
+}
+
+.tables .stat-icon {
+  background: #edf6ff;
+  color: #409eff;
+}
+
+.orders .stat-icon {
+  background: #f2f8ef;
+  color: #5f9c6b;
 }
 
 .stat-label {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-sub);
 }
 
 .stat-value {
@@ -175,15 +218,48 @@ onBeforeUnmount(() => {
 
 .stat-sub {
   font-size: 12px;
-  color: #c0c4cc;
+  color: #9ca3ab;
   margin-top: 4px;
 }
 
 .chart-card {
   margin-top: 4px;
+  border: 1px solid #edf0f2;
+  border-radius: 12px;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.page-header h1,
+.chart-header h2 {
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.page-header p,
+.chart-header p {
+  margin-top: 6px;
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
+.chart-header h2 {
+  font-size: 16px;
 }
 
 .chart {
   height: 320px;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+  }
 }
 </style>
