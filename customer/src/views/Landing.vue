@@ -87,10 +87,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useUserStore } from '../store/user'
 import { useCartStore } from '../store/cart'
-import { login, getMe } from '../api/user'
 import { getTableActiveOrder } from '../api/order'
 import { ORDER_STATUS_TEXT } from '../utils/constants'
-import { setToken, clearToken } from '../utils/storage'
+import { loginAndLoadProfile } from '../services/customerSession'
 
 const route = useRoute()
 const router = useRouter()
@@ -142,19 +141,8 @@ const onLogin = async () => {
   }
   logging.value = true
   try {
-    // /users/login 返回裸 token 字符串，再拉 /users/me 补用户信息
-    const token = await login({ phone: form.phone, password: form.password })
-    // getMe 依赖请求拦截器从 storage 读取 token，必须先临时写入。
-    // 如果补全资料失败则立即清理，避免留下半登录状态。
-    setToken(token)
-    let me
-    try {
-      me = await getMe()
-    } catch (error) {
-      clearToken()
-      throw error
-    }
-    userStore.setLogin(token, me)
+    const { token, userInfo } = await loginAndLoadProfile(form)
+    userStore.setLogin(token, userInfo)
     showToast('登录成功')
     showLogin.value = false
     loadActiveOrder()
