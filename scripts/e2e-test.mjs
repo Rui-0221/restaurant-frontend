@@ -134,6 +134,10 @@ console.log('--- 查询活跃订单 ---')
 const active1 = await api(CUSTOMER, '/orders/table/1/active', { token: userToken })
 check('桌1活跃订单含明细', active1.code === 1 && active1.data?.id === orderId && active1.data.details?.length >= 3)
 
+const history = await api(CUSTOMER, '/orders/user/history', { token: userToken })
+const historyOrder = history.data?.find((item) => item.id === orderId)
+check('历史订单可按订单 ID 精确定位', history.code === 1 && historyOrder?.details?.length >= 3)
+
 console.log('=== 3. 员工端（:5174 proxy）===')
 console.log('--- 订单列表与详情 ---')
 const orders = await api(ADMIN, '/orders?page=1&size=20', { token: waiterToken })

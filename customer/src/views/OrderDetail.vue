@@ -51,7 +51,8 @@
       </div>
     </template>
 
-    <van-empty v-else-if="!loading" description="没有进行中的订单" />
+    <van-loading v-else-if="loading" class="loading" vertical>正在加载订单</van-loading>
+    <van-empty v-else description="未找到这笔订单" />
   </div>
 </template>
 
@@ -59,7 +60,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCartStore } from '../store/cart'
-import { getTableActiveOrder } from '../api/order'
+import { getMyOrders, getTableActiveOrder } from '../api/order'
 import { ORDER_STATUS_TEXT, formatTime } from '../utils/constants'
 
 const route = useRoute()
@@ -79,24 +80,41 @@ const statusColors = {
 }
 const statusColor = computed(() => statusColors[order.value?.status] || statusColors[1])
 
-onMounted(async () => {
-  // 优先用提交响应缓存（无需请求），刷新后回退到桌台活跃订单查询
+const loadOrder = async () => {
+  const orderId = Number(route.params.id)
+  if (!Number.isInteger(orderId) || orderId < 1) {
+    loading.value = false
+    return
+  }
+
+  // 优先用提交响应缓存（无需请求）。
   const cached = cartStore.activeOrder
-  if (cached && cached.id === Number(route.params.id)) {
+  if (cached && Number(cached.id) === orderId) {
     order.value = cached
     loading.value = false
     return
   }
+
   try {
-    if (cartStore.tableId) {
-      order.value = await getTableActiveOrder(cartStore.tableId)
+    // 刷新后 Pinia 缓存会丢失，先从当前用户的历史订单中精确匹配路由 ID。
+    const myOrders = await getMyOrders()
+    order.value = (myOrders || []).find((item) => Number(item.id) === orderId) || null
+
+    // 同桌加菜的顾客可能不是首单用户，历史接口没有该订单；仅在已有扫码上下文且 ID 一致时兜底。
+    if (!order.value && cartStore.tableId) {
+      const activeOrder = await getTableActiveOrder(cartStore.tableId)
+      if (activeOrder && Number(activeOrder.id) === orderId) {
+        order.value = activeOrder
+      }
     }
   } catch {
     // 拦截器已提示
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(loadOrder)
 
 const continueOrder = () => {
   if (order.value?.status === 5 || order.value?.status === 0) {
@@ -197,5 +215,11 @@ const continueOrder = () => {
 
 .actions {
   margin: 20px 24px;
+}
+
+.loading {
+  display: flex;
+  min-height: 240px;
+  justify-content: center;
 }
 </style>

@@ -72,14 +72,17 @@ const submit = async () => {
   }
   submitting.value = true
   try {
+    const submittedMode = cartStore.mode
     const items = cartStore.list.map((i) => ({ dishId: i.dish.id, amount: i.amount }))
     // 金额完全由后端重算，前端只传 dishId + amount
     const order = await scanOrder({
       tableId: Number(cartStore.tableId),
       items,
     })
+    // 以本次接口响应作为详情页的唯一缓存，避免跳转后再按桌台误取其他订单。
+    cartStore.setContext(cartStore.tableId, 'add', order)
     cartStore.resetAfterSubmit()
-    showSuccessToast(cartStore.mode === 'add' ? '加菜成功' : '下单成功')
+    showSuccessToast(submittedMode === 'add' ? '加菜成功' : '下单成功')
     router.replace(`/order-detail/${order.id}`)
   } catch {
     // 拦截器已提示（如下架菜品）

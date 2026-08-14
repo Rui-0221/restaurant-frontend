@@ -20,7 +20,7 @@ const router = createRouter({
 // 轻量守卫：点餐/购物车需要登录，未登录跳登录页并记录回跳
 router.beforeEach((to) => {
   const userStore = useUserStore()
-  const needAuth = ['menu', 'cart', 'profile']
+  const needAuth = ['menu', 'cart', 'order-detail', 'profile']
   if (needAuth.includes(to.name) && !userStore.isLogin) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
