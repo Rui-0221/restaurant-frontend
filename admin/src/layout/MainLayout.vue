@@ -1,94 +1,66 @@
 <template>
+  <SkipLink />
   <el-container class="layout">
-    <!-- 侧边栏 -->
-    <el-aside :width="menuCollapsed ? '64px' : '224px'" class="aside">
-      <div class="logo">
-        <span class="logo-icon">🍜</span>
-        <span v-show="!menuCollapsed">餐厅管理系统</span>
-      </div>
-      <el-menu
-        :default-active="activeMenu"
-        :collapse="menuCollapsed"
-        :collapse-transition="false"
-        router
-        background-color="#1f2430"
-        text-color="#a8b2c1"
-        active-text-color="#fff"
-      >
-        <el-menu-item index="/dashboard">
-          <el-icon><DataBoard /></el-icon>
-          <span>工作台</span>
-        </el-menu-item>
-        <el-menu-item index="/orders">
-          <el-icon><Tickets /></el-icon>
-          <span>订单管理</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.isAdmin || auth.isWaiter" index="/order-take">
-          <el-icon><ShoppingCart /></el-icon>
-          <span>帮顾客点餐</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.isAdmin" index="/dishes">
-          <el-icon><Dish /></el-icon>
-          <span>菜品管理</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.isAdmin" index="/categories">
-          <el-icon><Menu /></el-icon>
-          <span>分类管理</span>
-        </el-menu-item>
-        <el-menu-item index="/tables">
-          <el-icon><Grid /></el-icon>
-          <span>桌台管理</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.isAdmin" index="/employees">
-          <el-icon><User /></el-icon>
-          <span>员工管理</span>
-        </el-menu-item>
-      </el-menu>
+    <el-aside v-if="!compact" :width="collapsed ? '72px' : '240px'" class="aside">
+      <AdminNav :active-menu="activeMenu" :collapsed="collapsed" />
     </el-aside>
 
-    <el-container>
-      <!-- 顶栏 -->
-      <el-header class="header">
+    <el-container class="content-container">
+      <el-header class="header" aria-label="页面工具栏">
         <div class="header-left">
           <el-button
             class="collapse-button"
             text
             circle
-            :aria-label="menuCollapsed ? '展开导航' : '收起导航'"
-            @click="collapsed = !collapsed"
+            :aria-expanded="compact ? mobileMenuOpen : !collapsed"
+            :aria-label="navigationButtonLabel"
+            @click="toggleNavigation"
           >
-            <el-icon><Expand v-if="menuCollapsed" /><Fold v-else /></el-icon>
+            <el-icon>
+              <Menu v-if="compact" />
+              <Expand v-else-if="collapsed" />
+              <Fold v-else />
+            </el-icon>
           </el-button>
           <span class="page-title">{{ route.meta.title || '' }}</span>
-          <el-tag
-            v-if="auth.isChef"
-            size="small"
-            type="primary"
-            effect="dark"
-            style="cursor: pointer"
-            @click="router.push('/kitchen')"
-          >
-            后厨屏入口 →
-          </el-tag>
+          <router-link v-if="auth.isChef" class="kitchen-link" to="/kitchen">
+            <span class="kitchen-label">后厨屏入口</span>
+            <span aria-hidden="true">→</span>
+          </router-link>
         </div>
         <div class="header-right">
           <el-tag size="small" :type="roleTagType">{{ roleLabel }}</el-tag>
           <span class="user-name">{{ auth.name }}</span>
-          <el-button link type="primary" @click="logout">退出</el-button>
+          <el-button class="logout-button" link type="primary" @click="logout">退出</el-button>
         </div>
       </el-header>
 
-      <el-main class="main">
+      <el-main id="main-content" class="main" tabindex="-1">
         <router-view />
       </el-main>
     </el-container>
   </el-container>
+
+  <el-drawer
+    v-model="mobileMenuOpen"
+    class="mobile-nav-drawer"
+    direction="ltr"
+    :with-header="false"
+    size="280px"
+    append-to-body
+  >
+    <div class="drawer-navigation">
+      <AdminNav :active-menu="activeMenu" @navigate="mobileMenuOpen = false" />
+    </div>
+  </el-drawer>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
+import AdminNav from '../components/AdminNav.vue'
+import SkipLink from '../components/SkipLink.vue'
 import { useAuthStore } from '../store/auth'
 import { ROLES } from '../utils/constants'
 
@@ -97,13 +69,17 @@ const router = useRouter()
 const auth = useAuthStore()
 const compact = ref(false)
 const collapsed = ref(false)
+const mobileMenuOpen = ref(false)
 let compactMedia
-
-const menuCollapsed = computed(() => compact.value || collapsed.value)
 
 const activeMenu = computed(() => {
   if (route.path.startsWith('/kitchen')) return ''
   return route.path
+})
+
+const navigationButtonLabel = computed(() => {
+  if (compact.value) return mobileMenuOpen.value ? '关闭导航' : '打开导航'
+  return collapsed.value ? '展开导航' : '收起导航'
 })
 
 const roleLabel = computed(() => ROLES[auth.role]?.label || '未知')
@@ -111,7 +87,23 @@ const roleTagType = computed(() => ROLES[auth.role]?.type || 'info')
 
 const updateCompact = (event) => {
   compact.value = event.matches
+  if (!event.matches) mobileMenuOpen.value = false
 }
+
+const toggleNavigation = () => {
+  if (compact.value) {
+    mobileMenuOpen.value = !mobileMenuOpen.value
+    return
+  }
+  collapsed.value = !collapsed.value
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    mobileMenuOpen.value = false
+  },
+)
 
 onMounted(() => {
   compactMedia = window.matchMedia('(max-width: 768px)')
@@ -132,84 +124,139 @@ const logout = async () => {
 
 <style scoped>
 .layout {
-  height: 100%;
+  height: 100dvh;
+  min-height: 0;
 }
 
 .aside {
-  background: var(--sidebar-bg);
+  position: relative;
+  z-index: 2;
   overflow-x: hidden;
-  transition: width 0.2s ease;
+  background: var(--sidebar-bg);
+  box-shadow: 8px 0 28px rgb(45 33 28 / 10%);
+  transition: width var(--motion-base) ease;
 }
 
-.logo {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 0 20px;
-  gap: 8px;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  background: rgba(0, 0, 0, 0.15);
-}
-
-.logo-icon {
-  font-size: 22px;
-}
-
-.aside :deep(.el-menu) {
-  --el-menu-active-color: #fff;
-  border-right: 0;
-}
-
-.aside :deep(.el-menu-item.is-active) {
-  background: var(--brand-color) !important;
-}
-
-.aside :deep(.el-menu-item:hover) {
-  background: rgba(255, 255, 255, 0.08) !important;
+.content-container {
+  min-width: 0;
+  min-height: 0;
 }
 
 .header {
-  background: #fff;
-  border-bottom: 1px solid #e6e8eb;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.04);
+  gap: 16px;
+  height: 64px;
+  padding: 0 24px;
+  border-bottom: 1px solid rgb(233 224 216 / 82%);
+  background: rgb(255 253 250 / 92%);
+  box-shadow: 0 4px 18px rgb(87 58 39 / 5%);
+  backdrop-filter: blur(14px);
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .collapse-button {
+  flex: 0 0 var(--tap-target-min);
+  width: var(--tap-target-min);
+  min-height: var(--tap-target-min);
   color: var(--text-sub);
   font-size: 18px;
 }
 
 .page-title {
-  font-size: 16px;
-  font-weight: 600;
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 18px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kitchen-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border-radius: var(--radius-xl);
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .header-right {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 12px;
 }
 
 .user-name {
+  color: var(--text-main);
   font-size: 14px;
-  color: #303133;
+  font-weight: 600;
+}
+
+.logout-button {
+  min-width: var(--tap-target-min);
+  min-height: var(--tap-target-min);
 }
 
 .main {
   min-width: 0;
+  min-height: 0;
   padding: 0;
   overflow-y: auto;
+  background: transparent;
+  scroll-behavior: smooth;
+}
+
+.drawer-navigation {
+  width: 100%;
+  height: 100dvh;
+}
+
+@media (max-width: 768px) {
+  .header {
+    height: calc(60px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 12px 0;
+  }
+
+  .header-left {
+    gap: 6px;
+  }
+
+  .header-right {
+    gap: 4px;
+  }
+
+  .page-title {
+    font-size: 16px;
+  }
+
+  .user-name {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .kitchen-link {
+    min-width: var(--tap-target-min);
+    justify-content: center;
+    padding-inline: 8px;
+  }
+
+  .kitchen-label {
+    display: none;
+  }
 }
 </style>

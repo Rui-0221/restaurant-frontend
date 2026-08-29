@@ -1,19 +1,24 @@
-/* 顾客端全局样式 —— 暖色餐厅主题 */
+/* 顾客端全局样式 —— 暖色现代餐饮主题 */
 :root {
+  color-scheme: light;
   --brand-color: #e54d2e;
   --brand-dark: #c93d20;
+  --brand-active: #a8321b;
+  --brand-hover: #d94527;
   --brand-light: #fff3f0;
   --brand-soft: #fff8f5;
-  --text-main: #2d2d2d;
-  --text-sub: #8a8a8a;
-  --text-muted: #b0aaa5;
-  --bg-page: #f6f6f4;
-  --surface: #fff;
-  --border-subtle: #eee9e5;
-  --status-info: #1989fa;
-  --status-success: #3f9b66;
-  --status-warning: #d88b27;
-  --status-danger: #d95042;
+  --text-main: #2d2926;
+  --text-sub: #746d67;
+  --text-muted: #746d67;
+  --bg-page: #f7f3ee;
+  --surface: #fffdfa;
+  --surface-strong: #fff;
+  --border-subtle: #e9e0d8;
+  --status-info: #2f69ac;
+  --status-success: #2f7455;
+  --status-warning: #945915;
+  --status-danger: #b83e38;
+  --status-neutral: #746d67;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -28,9 +33,13 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
   --card-radius: var(--radius-md);
-  --shadow-card: 0 2px 10px rgb(77 52 37 / 6%);
-  --shadow-floating: 0 10px 28px rgb(77 52 37 / 12%);
+  --shadow-card: 0 8px 24px rgb(87 58 39 / 7%);
+  --shadow-floating: 0 18px 48px rgb(87 58 39 / 14%);
+  --focus-ring: 0 0 0 3px rgb(229 77 46 / 24%);
   --tap-target-min: 44px;
+  --content-max: 720px;
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
 }
 
 * {
@@ -39,48 +48,172 @@
   padding: 0;
 }
 
-html,
+html {
+  min-height: 100%;
+  scroll-padding-block: 72px 120px;
+  background: #efe7df;
+  text-size-adjust: 100%;
+}
+
 body {
-  height: 100%;
-  background: var(--bg-page);
+  min-height: 100%;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 10% 0%, rgb(229 77 46 / 8%), transparent 28rem), var(--bg-page);
   color: var(--text-main);
   font-family:
     -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', sans-serif;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: rgb(229 77 46 / 12%);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgb(229 77 46 / 58%);
+  outline-offset: 2px;
+}
+
+h1[id],
+h2[id],
+h3[id] {
+  scroll-margin-top: 72px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  z-index: 4000;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target-min);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  color: var(--brand-dark);
+  box-shadow: var(--shadow-floating);
+  text-decoration: none;
+  transform: translate(-50%, -160%);
+  transition: transform var(--motion-fast) ease;
+}
+
+.skip-link:focus {
+  transform: translate(-50%, 0);
 }
 
 #app {
-  height: 100%;
+  width: min(100%, var(--content-max));
+  min-height: 100dvh;
+  margin-inline: auto;
+  overflow-x: hidden;
+  background: var(--bg-page);
+  box-shadow: 0 0 48px rgb(87 58 39 / 8%);
 }
 
 /* Vant 主题变量覆盖 */
 :root:root {
-  --van-primary-color: var(--brand-color);
-  --van-button-primary-background: var(--brand-color);
-  --van-button-primary-border-color: var(--brand-color);
-  --van-tab-active-text-color: var(--brand-color);
+  --van-primary-color: var(--brand-dark);
+  --van-button-primary-background: var(--brand-dark);
+  --van-button-primary-border-color: var(--brand-dark);
+  --van-button-border-radius: var(--radius-xl);
+  --van-tab-active-text-color: var(--brand-dark);
   --van-tabs-bottom-bar-color: var(--brand-color);
-  --van-stepper-button-icon-color: var(--brand-color);
-  --van-submit-bar-button-background: var(--brand-color);
-  --van-nav-bar-icon-color: var(--brand-color);
-  --van-nav-bar-text-color: var(--brand-color);
+  --van-stepper-button-icon-color: var(--brand-dark);
+  --van-submit-bar-button-background: linear-gradient(
+    135deg,
+    var(--brand-dark),
+    var(--brand-active)
+  );
+  --van-submit-bar-background: rgb(255 253 250 / 96%);
+  --van-nav-bar-background: rgb(255 253 250 / 94%);
+  --van-nav-bar-icon-color: var(--brand-dark);
+  --van-nav-bar-text-color: var(--brand-dark);
+  --van-cell-background: var(--surface);
+  --van-field-label-color: var(--text-sub);
+  --van-field-input-text-color: var(--text-main);
+  --van-popup-background: var(--surface);
+  --van-dialog-border-radius: var(--radius-lg);
+  --van-border-color: var(--border-subtle);
 }
 
 .page-container {
-  min-height: 100%;
-  padding-bottom: 80px; /* 给底部购物车条留空间 */
+  min-height: 100dvh;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
-/* 卡片通用样式 */
 .card {
-  background: var(--surface);
+  border: 1px solid rgb(233 224 216 / 78%);
   border-radius: var(--card-radius);
+  background: var(--surface);
   box-shadow: var(--shadow-card);
 }
 
-/* 金额主色 */
 .price {
-  color: var(--brand-color);
-  font-weight: 600;
+  color: var(--brand-dark);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.van-nav-bar {
+  border-bottom: 1px solid rgb(233 224 216 / 72%);
+  backdrop-filter: blur(14px);
+}
+
+.van-popup,
+.van-dialog {
+  overscroll-behavior: contain;
+}
+
+.van-button,
+.van-submit-bar__button,
+.van-nav-bar__left,
+.van-nav-bar__right,
+.van-tab {
+  min-height: var(--tap-target-min);
+}
+
+@media (max-width: 720px) {
+  #app {
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

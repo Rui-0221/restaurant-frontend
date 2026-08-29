@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { getToken, setToken, clearToken, getUser, setUser, clearUser } from '../utils/storage'
+import { clearAiOrderSession } from '../utils/aiOrderSession'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -26,6 +27,7 @@ export const useUserStore = defineStore('user', {
       this.userInfo = null
       clearToken()
       clearUser()
+      clearAiOrderSession()
     },
   },
 })

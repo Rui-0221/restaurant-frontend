@@ -1,10 +1,59 @@
-/* 员工端全局样式 */
+/* 员工端全局样式 —— 与顾客端共享暖色现代餐饮语义 */
 :root {
+  color-scheme: light;
   --brand-color: #e54d2e;
   --brand-dark: #c93d20;
-  --sidebar-bg: #1f2430;
-  --text-main: #303133;
-  --text-sub: #7a7f87;
+  --brand-active: #a8321b;
+  --brand-hover: #d94527;
+  --brand-light: #fff3f0;
+  --brand-soft: #fff8f5;
+  --sidebar-bg: #25211f;
+  --sidebar-surface: #302a27;
+  --sidebar-text: #d7cfca;
+  --sidebar-muted: #a69c96;
+  --sidebar-active: #fff;
+  --text-main: #2d2926;
+  --text-sub: #746d67;
+  --text-muted: #746d67;
+  --bg-page: #f7f3ee;
+  --surface: #fffdfa;
+  --surface-strong: #fff;
+  --border-subtle: #e9e0d8;
+  --status-info: #2f69ac;
+  --status-success: #2f7455;
+  --status-warning: #945915;
+  --status-danger: #b83e38;
+  --status-neutral: #746d67;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-card: 0 8px 24px rgb(87 58 39 / 7%);
+  --shadow-floating: 0 18px 48px rgb(87 58 39 / 14%);
+  --tap-target-min: 44px;
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+
+  --el-color-primary: var(--brand-dark);
+  --el-color-primary-light-3: #ed8066;
+  --el-color-primary-light-5: #f3a695;
+  --el-color-primary-light-7: #f8ccc2;
+  --el-color-primary-light-8: #fbe0d9;
+  --el-color-primary-light-9: var(--brand-light);
+  --el-color-primary-dark-2: var(--brand-active);
+  --el-bg-color-page: var(--bg-page);
+  --el-bg-color: var(--surface);
+  --el-fill-color-blank: var(--surface);
+  --el-border-color: var(--border-subtle);
+  --el-border-color-light: #eee7e0;
+  --el-text-color-primary: var(--text-main);
+  --el-text-color-regular: #554f4a;
+  --el-text-color-secondary: var(--text-sub);
+  --el-border-radius-base: var(--radius-sm);
+  --el-border-radius-round: var(--radius-xl);
+  --el-font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
 }
 
 * {
@@ -17,58 +66,252 @@ html,
 body,
 #app {
   height: 100%;
+  min-height: 100%;
+}
+
+html {
+  scroll-padding-block: 72px 96px;
+  background: var(--bg-page);
+  text-size-adjust: 100%;
 }
 
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
-    'Microsoft YaHei', sans-serif;
-  background: #f0f2f5;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 85% 0%, rgb(229 77 46 / 6%), transparent 32rem), var(--bg-page);
   color: var(--text-main);
+  font-family: var(--el-font-family);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: rgb(229 77 46 / 12%);
 }
 
-/* Element Plus 品牌色覆盖为餐厅主题色 */
+button,
+a {
+  touch-action: manipulation;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgb(229 77 46 / 52%);
+  outline-offset: 2px;
+}
+
+h1[id],
+h2[id],
+h3[id] {
+  scroll-margin-top: 72px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  z-index: 4000;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-target-min);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-strong);
+  color: var(--brand-dark);
+  box-shadow: var(--shadow-floating);
+  text-decoration: none;
+  transform: translate(-50%, -160%);
+  transition: transform var(--motion-fast) ease;
+}
+
+.skip-link:focus {
+  transform: translate(-50%, 0);
+}
+
+.el-button {
+  min-height: var(--tap-target-min);
+  font-weight: 600;
+}
+
+.el-button.is-link {
+  min-width: var(--tap-target-min);
+}
+
 .el-button--primary {
-  --el-button-bg-color: var(--brand-color);
-  --el-button-border-color: var(--brand-color);
-  --el-button-hover-bg-color: var(--brand-dark);
-  --el-button-hover-border-color: var(--brand-dark);
+  --el-button-bg-color: var(--brand-dark);
+  --el-button-border-color: var(--brand-dark);
+  --el-button-hover-bg-color: var(--brand-active);
+  --el-button-hover-border-color: var(--brand-active);
+  --el-button-active-bg-color: #8f2918;
+  --el-button-active-border-color: #8f2918;
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-input-number {
+  min-height: var(--tap-target-min);
+}
+
+.el-input__inner,
+.el-select__input {
+  min-height: var(--tap-target-min);
+}
+
+.el-input-number .el-input__wrapper {
+  padding-inline: calc(var(--tap-target-min) + 6px);
+}
+
+.el-input-number .el-input-number__decrease,
+.el-input-number .el-input-number__increase {
+  top: 0;
+  bottom: 0;
+  width: var(--tap-target-min);
+  min-height: var(--tap-target-min);
+}
+
+.el-pagination .btn-prev,
+.el-pagination .btn-next,
+.el-pagination .el-pager li {
+  min-width: var(--tap-target-min);
+  min-height: var(--tap-target-min);
+}
+
+.el-dialog__headerbtn,
+.el-drawer__close-btn {
+  width: var(--tap-target-min);
+  min-width: var(--tap-target-min);
+  height: var(--tap-target-min);
+  min-height: var(--tap-target-min);
+}
+
+.el-dialog__headerbtn {
+  top: 8px;
+  right: 8px;
 }
 
 .el-menu {
   border-right: none;
 }
 
-/* 页面通用卡片容器 */
+.el-card,
+.el-dialog,
+.el-drawer {
+  --el-card-border-color: var(--border-subtle);
+}
+
+.el-dialog,
+.el-drawer {
+  overscroll-behavior: contain;
+}
+
+.mobile-nav-drawer .el-drawer__body {
+  padding: 0;
+  overflow: hidden;
+  background: var(--sidebar-bg);
+}
+
 .page {
-  padding: 16px;
+  padding: 24px;
 }
 
 .page-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.06);
+  padding: 20px;
+  border: 1px solid rgb(233 224 216 / 82%);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
 }
 
-/* 表格工具栏 */
+.table-shell {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgb(233 224 216 / 82%);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.table-shell > .el-table {
+  min-width: var(--table-min-width, 760px);
+}
+
+.table-shell .el-table {
+  border-radius: var(--radius-md);
+}
+
+.panel-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-kicker {
+  color: var(--brand-dark);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+
+.panel-heading h2 {
+  margin-top: 4px;
+  color: var(--text-main);
+  font-size: 18px;
+}
+
 .toolbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-/* 金额列 */
 .amount {
-  color: var(--brand-color);
-  font-weight: 600;
+  color: var(--brand-dark);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-/* 小屏下由 MainLayout 自动切换为折叠导航，页面只需收紧边距。 */
+.el-table {
+  --el-table-header-bg-color: #fbf7f3;
+  --el-table-row-hover-bg-color: var(--brand-soft);
+  --el-table-border-color: #eee7e0;
+}
+
+.el-drawer__body,
+.el-dialog__body {
+  overscroll-behavior: contain;
+}
+
 @media (max-width: 768px) {
   .page {
-    padding: 12px;
+    padding: 16px;
+  }
+
+  .page-card {
+    padding: 14px;
+    border-radius: var(--radius-md);
+  }
+
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .el-dialog {
+    width: calc(100% - 24px) !important;
+    margin-inline: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

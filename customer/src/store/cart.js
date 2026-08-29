@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia'
+import { normalizeTableId } from '../router/tableRoutes.js'
+import { clearCartSession, loadCartSession, saveCartSession } from '../utils/cartSession.js'
 import { ORDER_LIMITS } from '../utils/constants.js'
 
 // 购物车 + 点餐上下文（桌台、首次/加菜模式）
@@ -16,18 +18,46 @@ export const useCartStore = defineStore('cart', {
       Object.values(state.items).reduce((s, i) => s + i.dish.price * i.amount, 0),
   },
   actions: {
+    persistSession() {
+      if (this.tableId === null) return
+      saveCartSession(this.tableId, this.list)
+    },
+
     // 从扫码落地页进入时设置上下文
     setContext(tableId, mode, activeOrder = null) {
-      // 路由参数是字符串、接口数据可能是数字，统一后比较。
-      // 一旦切到另一桌，原购物车绝不能继续带过去。
-      const previousTableId = this.tableId == null ? null : String(this.tableId)
-      const nextTableId = tableId == null ? null : String(tableId)
-      if (previousTableId !== nextTableId) {
+      const previousTableId = normalizeTableId(this.tableId)
+      const nextTableId = normalizeTableId(tableId)
+      if (nextTableId === null) {
         this.items = {}
+        this.tableId = null
+        clearCartSession()
+        this.mode = mode
+        this.activeOrder = activeOrder
+        return
       }
-      this.tableId = tableId
+      if (previousTableId !== null && previousTableId !== nextTableId) {
+        this.items = {}
+        clearCartSession()
+      }
+      this.tableId = typeof tableId === 'number' ? tableId : nextTableId
       this.mode = mode
       this.activeOrder = activeOrder
+      if (previousTableId !== null && previousTableId !== nextTableId) this.persistSession()
+    },
+
+    hydrateForTable(tableId) {
+      const normalizedTableId = normalizeTableId(tableId)
+      if (normalizedTableId === null) {
+        this.items = {}
+        this.tableId = null
+        clearCartSession()
+        return []
+      }
+
+      const restored = loadCartSession(normalizedTableId)
+      this.tableId = typeof tableId === 'number' ? tableId : normalizedTableId
+      this.items = Object.fromEntries((restored?.items ?? []).map((item) => [item.dish.id, item]))
+      return restored?.items ?? []
     },
     addItem(dish) {
       const currentAmount = this.items[dish.id]?.amount || 0
@@ -43,12 +73,14 @@ export const useCartStore = defineStore('cart', {
       }
       if (nextAmount === 0) {
         delete this.items[dish.id]
+        this.persistSession()
         return { ok: true }
       }
       if (!this.items[dish.id] && Object.keys(this.items).length >= ORDER_LIMITS.maxKinds) {
         return { ok: false, message: `一次最多选择 ${ORDER_LIMITS.maxKinds} 种菜品` }
       }
       this.items[dish.id] = { dish, amount: nextAmount }
+      this.persistSession()
       return { ok: true }
     },
     decItem(dishId) {
@@ -58,13 +90,16 @@ export const useCartStore = defineStore('cart', {
     },
     deleteItem(dishId) {
       delete this.items[dishId]
+      this.persistSession()
     },
     clear() {
       this.items = {}
+      this.persistSession()
     },
     // 提交成功后清空购物车，但保留桌台上下文以便继续加菜
     resetAfterSubmit() {
       this.items = {}
+      this.persistSession()
     },
   },
 })

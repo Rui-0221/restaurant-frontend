@@ -38,6 +38,12 @@ const routes = [
         meta: { title: '菜品管理', adminOnly: true },
       },
       {
+        path: 'dish-ai-profiles',
+        name: 'dishAiProfiles',
+        component: () => import('../views/DishAiProfiles.vue'),
+        meta: { title: 'AI 菜品手册', adminOnly: true },
+      },
+      {
         path: 'categories',
         name: 'categories',
         component: () => import('../views/Categories.vue'),

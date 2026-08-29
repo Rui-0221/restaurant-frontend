@@ -1,68 +1,69 @@
 <template>
-  <div class="page">
-    <div class="page-header">
-      <div>
-        <h1>工作台</h1>
-        <p>快速了解餐厅当前运营情况</p>
-      </div>
-      <el-tag type="info" effect="plain">订单状态统计基于最近 {{ orderSampleLimit }} 笔</el-tag>
-    </div>
+  <div class="page" v-loading="loading">
+    <PageHeader title="工作台" subtitle="快速了解餐厅当前的经营、桌台和订单状态">
+      <template #actions>
+        <el-tag type="info" effect="plain" round> 最近 {{ orderSampleLimit }} 笔订单样本 </el-tag>
+      </template>
+    </PageHeader>
 
-    <el-row :gutter="16">
-      <el-col v-if="authStore.isAdmin" :xs="24" :sm="8">
-        <div class="stat-card today">
-          <div class="stat-icon">
+    <section class="metrics-grid" aria-label="经营概况">
+      <article v-if="authStore.isAdmin" class="metric-card revenue-card">
+        <div class="metric-top">
+          <div class="metric-icon">
             <el-icon><Money /></el-icon>
           </div>
-          <div>
-            <div class="stat-label">今日营业额</div>
-            <div class="stat-value">¥{{ revenue.toFixed(2) }}</div>
-            <div class="stat-sub">{{ todayDate }}</div>
-          </div>
+          <span class="metric-badge">今日</span>
         </div>
-      </el-col>
-      <el-col :xs="24" :sm="authStore.isAdmin ? 8 : 12">
-        <div class="stat-card tables">
-          <div class="stat-icon">
+        <p class="metric-label">今日营业额</p>
+        <MoneyValue class="metric-value revenue" :amount="revenue" />
+        <p class="metric-footnote">{{ todayDate || '暂无日期' }}</p>
+      </article>
+
+      <article class="metric-card table-card">
+        <div class="metric-top">
+          <div class="metric-icon">
             <el-icon><Grid /></el-icon>
           </div>
-          <div>
-            <div class="stat-label">桌台概况</div>
-            <div class="stat-value">
-              <span class="free">{{ freeTables }}</span>
-              <span class="stat-slash">/</span>
-              <span class="occupied">{{ occupiedTables }}</span>
-              <span class="stat-unit"> 空闲/占用</span>
-            </div>
-            <div class="stat-sub">共 {{ totalTables }} 张桌台</div>
-          </div>
+          <span class="metric-badge neutral">共 {{ totalTables }} 桌</span>
         </div>
-      </el-col>
-      <el-col :xs="24" :sm="authStore.isAdmin ? 8 : 12">
-        <div class="stat-card orders">
-          <div class="stat-icon">
+        <p class="metric-label">桌台概况</p>
+        <div class="metric-value split-value">
+          <span class="free">{{ freeTables }}</span>
+          <span class="divider">/</span>
+          <span class="occupied">{{ occupiedTables }}</span>
+        </div>
+        <p class="metric-footnote">空闲 / 占用</p>
+      </article>
+
+      <article class="metric-card order-card">
+        <div class="metric-top">
+          <div class="metric-icon">
             <el-icon><Tickets /></el-icon>
           </div>
-          <div>
-            <div class="stat-label">进行中订单</div>
-            <div class="stat-value">{{ activeOrders }}</div>
-            <div class="stat-sub">最近 {{ orderSampleLimit }} 笔中的进行中订单</div>
-          </div>
+          <span class="metric-badge success">实时</span>
         </div>
-      </el-col>
-    </el-row>
+        <p class="metric-label">进行中订单</p>
+        <strong class="metric-value">{{ activeOrders }}</strong>
+        <p class="metric-footnote">样本内待制作至用餐中订单</p>
+      </article>
+    </section>
 
-    <el-card class="chart-card" shadow="never">
-      <template #header>
-        <div class="chart-header">
-          <div>
-            <h2>订单状态分布</h2>
-            <p>仅统计最近 {{ orderSampleLimit }} 笔订单，不代表全量经营数据</p>
-          </div>
+    <section class="chart-card page-card" aria-labelledby="order-chart-title">
+      <div class="panel-heading">
+        <div>
+          <p class="panel-kicker">ORDER OVERVIEW</p>
+          <h2 id="order-chart-title">订单状态分布</h2>
+          <p>统计最近 {{ orderSampleLimit }} 笔订单，用于快速观察当前节奏。</p>
         </div>
-      </template>
-      <div ref="chartRef" class="chart"></div>
-    </el-card>
+        <span class="chart-note">非全量经营数据</span>
+      </div>
+      <div
+        ref="chartRef"
+        class="chart"
+        role="img"
+        :aria-label="`最近 ${orderSampleLimit} 笔订单的状态分布图`"
+      />
+    </section>
   </div>
 </template>
 
@@ -73,6 +74,8 @@ import { Grid, Money, Tickets } from '@element-plus/icons-vue'
 import { getTodayStatistics, getOrders, getTables } from '../api/modules'
 import { useAuthStore } from '../store/auth'
 import { ORDER_STATUS } from '../utils/constants'
+import PageHeader from '../components/PageHeader.vue'
+import MoneyValue from '../components/MoneyValue.vue'
 
 const authStore = useAuthStore()
 
@@ -80,6 +83,7 @@ const revenue = ref(0)
 const todayDate = ref('')
 const tables = ref([])
 const orderList = ref([])
+const loading = ref(false)
 const orderSampleLimit = 100
 
 const totalTables = computed(() => tables.value.length)
@@ -93,20 +97,28 @@ const chartRef = ref(null)
 let chart = null
 
 const loadAll = async () => {
-  const [stat, list, t] = await Promise.all([
-    // 营业额仅管理员可见：非管理员不调用统计接口（后端也校验角色），避免报错提示
-    authStore.isAdmin ? getTodayStatistics().catch(() => null) : Promise.resolve(null),
-    getOrders(1, orderSampleLimit).catch(() => null),
-    getTables().catch(() => []),
-  ])
-  if (stat) {
-    revenue.value = Number(stat.totalRevenue) || 0
-    todayDate.value = stat.date || ''
+  loading.value = true
+  try {
+    const [stat, list, t] = await Promise.all([
+      // 营业额仅管理员可见：非管理员不调用统计接口（后端也校验角色），避免报错提示
+      authStore.isAdmin ? getTodayStatistics().catch(() => null) : Promise.resolve(null),
+      getOrders(1, orderSampleLimit).catch(() => null),
+      getTables().catch(() => []),
+    ])
+    if (stat) {
+      revenue.value = Number(stat.totalRevenue) || 0
+      todayDate.value = stat.date || ''
+    }
+    orderList.value = list?.list || []
+    tables.value = t || []
+    renderChart()
+  } finally {
+    loading.value = false
   }
-  orderList.value = list?.list || []
-  tables.value = t || []
-  renderChart()
 }
+
+const cssColor = (name, fallback) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
 
 const renderChart = () => {
   if (!chartRef.value) return
@@ -115,17 +127,35 @@ const renderChart = () => {
     name: ORDER_STATUS[s].label,
     value: orderList.value.filter((o) => o.status === s).length,
   }))
+  const surfaceColor = cssColor('--surface', '#fffdfa')
+  const textColor = cssColor('--text-sub', '#746d67')
   chart.setOption({
-    tooltip: { trigger: 'item' },
-    legend: { bottom: 0, icon: 'circle' },
-    color: ['#e6a23c', '#409eff', '#7ed321', '#1989fa', '#909399', '#c0c4cc'],
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: surfaceColor,
+      borderColor: cssColor('--border-subtle', '#e9e0d8'),
+      textStyle: { color: cssColor('--text-main', '#2d2926') },
+    },
+    legend: {
+      bottom: 0,
+      icon: 'circle',
+      textStyle: { color: textColor },
+    },
+    color: [
+      cssColor('--status-warning', '#c47a22'),
+      cssColor('--status-info', '#3578c8'),
+      cssColor('--brand-color', '#e54d2e'),
+      cssColor('--status-success', '#398866'),
+      cssColor('--status-neutral', '#746d67'),
+      cssColor('--text-muted', '#9a918b'),
+    ],
     series: [
       {
         type: 'pie',
-        radius: ['45%', '68%'],
-        center: ['50%', '45%'],
+        radius: ['48%', '70%'],
+        center: ['50%', '44%'],
         avoidLabelOverlap: true,
-        itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+        itemStyle: { borderRadius: 8, borderColor: surfaceColor, borderWidth: 3 },
         label: { show: false },
         data: statusCount.filter((d) => d.value > 0),
       },
@@ -147,119 +177,179 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.stat-card {
-  background: #fff;
-  min-height: 128px;
-  border: 1px solid #edf0f2;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  box-shadow: 0 4px 14px rgb(45 54 63 / 5%);
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
-.stat-icon {
-  width: 44px;
-  height: 44px;
+.metric-card {
+  position: relative;
+  min-height: 190px;
+  overflow: hidden;
+  padding: 20px;
+  border: 1px solid rgb(233 224 216 / 84%);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 100% 0%, rgb(229 77 46 / 8%), transparent 12rem), var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.metric-card::after {
+  position: absolute;
+  right: -44px;
+  bottom: -70px;
+  width: 150px;
+  height: 150px;
+  border: 1px solid rgb(229 77 46 / 7%);
+  border-radius: 50%;
+  content: '';
+}
+
+.metric-top {
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: #fff2ed;
-  color: var(--brand-color);
+  justify-content: space-between;
+}
+
+.metric-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  background: var(--brand-light);
+  color: var(--brand-dark);
   font-size: 22px;
+  place-items: center;
 }
 
-.tables .stat-icon {
-  background: #edf6ff;
-  color: #409eff;
+.table-card .metric-icon {
+  background: rgb(53 120 200 / 11%);
+  color: var(--status-info);
 }
 
-.orders .stat-icon {
-  background: #f2f8ef;
-  color: #5f9c6b;
+.order-card .metric-icon {
+  background: rgb(57 136 102 / 11%);
+  color: var(--status-success);
 }
 
-.stat-label {
-  font-size: 13px;
+.metric-badge {
+  padding: 4px 9px;
+  border-radius: var(--radius-xl);
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.metric-badge.neutral {
+  background: #f2ede8;
   color: var(--text-sub);
 }
 
-.stat-value {
-  font-size: 26px;
-  font-weight: 700;
-  margin-top: 4px;
+.metric-badge.success {
+  background: rgb(57 136 102 / 10%);
+  color: var(--status-success);
 }
 
-.today .stat-value {
-  color: var(--brand-color);
+.metric-label {
+  margin-top: 20px;
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
+.metric-value {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-main);
+  font-size: 30px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.metric-value.revenue {
+  color: var(--brand-dark);
+}
+
+.split-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .free {
-  color: #67c23a;
+  color: var(--status-success);
 }
 
 .occupied {
-  color: #f56c6c;
+  color: var(--status-danger);
 }
 
-.stat-slash {
-  color: #c0c4cc;
-  margin: 0 4px;
-}
-
-.stat-unit {
-  font-size: 14px;
-  color: #909399;
+.divider {
+  color: var(--text-muted);
+  font-size: 20px;
   font-weight: 400;
 }
 
-.stat-sub {
-  font-size: 12px;
-  color: #9ca3ab;
-  margin-top: 4px;
+.metric-footnote {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .chart-card {
-  margin-top: 4px;
-  border: 1px solid #edf0f2;
-  border-radius: 12px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
 }
 
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.page-header h1,
-.chart-header h2 {
-  font-size: 18px;
-  font-weight: 650;
-}
-
-.page-header p,
-.chart-header p {
-  margin-top: 6px;
+.panel-heading p:last-child {
+  margin-top: 5px;
   color: var(--text-sub);
-  font-size: 13px;
+  font-size: 12px;
 }
 
-.chart-header h2 {
-  font-size: 16px;
+.chart-note {
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
 .chart {
-  height: 320px;
+  height: 340px;
+  margin-top: 8px;
 }
 
-@media (max-width: 768px) {
-  .page-header {
+@media (max-width: 980px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metrics-grid .metric-card:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics-grid .metric-card:last-child {
+    grid-column: auto;
+  }
+
+  .metric-card {
+    min-height: 176px;
+  }
+
+  .panel-heading {
+    align-items: flex-start;
     flex-direction: column;
+  }
+
+  .chart {
+    height: 300px;
   }
 }
 </style>

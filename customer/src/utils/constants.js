@@ -17,7 +17,18 @@ export const ORDER_LIMITS = {
   maxAmountPerDish: 99,
 }
 
+const dateTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+})
+
 export const formatTime = (iso) => {
   if (!iso) return '-'
-  return iso.replace('T', ' ').slice(0, 19)
+  const date = new Date(iso)
+  return Number.isNaN(date.getTime()) ? '-' : dateTimeFormatter.format(date)
 }

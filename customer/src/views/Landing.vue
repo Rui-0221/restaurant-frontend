@@ -1,84 +1,141 @@
 <template>
-  <div class="landing">
-    <div class="hero">
-      <div class="hero-content">
-        <div class="logo">🍜</div>
-        <h1>欢迎光临</h1>
-        <p class="table-label">桌号</p>
-        <div class="table-no">{{ tableId }}</div>
+  <main id="main-content" class="landing" tabindex="-1" aria-labelledby="landing-title">
+    <header class="hero">
+      <div class="hero-orb orb-one" aria-hidden="true" />
+      <div class="hero-orb orb-two" aria-hidden="true" />
+      <div class="brand-lockup">
+        <div class="logo" aria-hidden="true">🍜</div>
+        <div>
+          <p class="brand-name" translate="no">有味餐厅</p>
+          <p class="brand-slogan">扫码点餐 · 新鲜上桌</p>
+        </div>
       </div>
-    </div>
+      <div class="hero-copy">
+        <p class="eyebrow">TABLE READY · 桌台已识别</p>
+        <h1 id="landing-title">欢迎入座，慢慢享用</h1>
+        <div class="table-number" aria-label="当前桌号">
+          <span>桌号</span>
+          <strong>{{ tableId }}</strong>
+        </div>
+      </div>
+    </header>
 
-    <div v-if="userStore.isLogin" class="panel">
-      <!-- 查询中 -->
-      <van-loading v-if="loading" class="loading" />
+    <section v-if="userStore.isLogin" class="panel" aria-label="点餐状态">
+      <LoadingSkeleton v-if="loading" :count="1" />
 
-      <!-- 首次点餐 -->
+      <template v-else-if="contextError">
+        <div class="mode-icon warning" aria-hidden="true">!</div>
+        <div class="mode-badge warning">暂时无法确认桌台状态</div>
+        <p class="tip">购物车已经安全保留，请重试后再继续点餐。</p>
+        <div class="actions">
+          <van-button type="primary" block round size="large" @click="syncContext">重试</van-button>
+        </div>
+      </template>
+
       <template v-else-if="!activeOrder">
-        <div class="mode-badge new">✨ 首次点餐</div>
-        <div class="tip">本桌还没有订单，开始你的美食之旅吧</div>
+        <div class="mode-icon new" aria-hidden="true">✨</div>
+        <div class="mode-badge new">首次点餐</div>
+        <h2>准备好点餐了吗？</h2>
+        <p class="tip">本桌还没有进行中的订单，去看看今天想吃什么。</p>
         <div class="actions">
           <van-button type="primary" block round size="large" @click="goMenu">开始点餐</van-button>
         </div>
       </template>
 
-      <!-- 加菜 -->
       <template v-else>
-        <div class="mode-badge add">➕ 加菜模式</div>
-        <div class="tip">
-          本桌已有订单 #{{ activeOrder.id }}（{{
-            ORDER_STATUS_TEXT(activeOrder.status)
-          }}），可继续加菜
-        </div>
-        <div class="order-summary card">
+        <div class="mode-icon add" aria-hidden="true">＋</div>
+        <div class="mode-badge add">加菜模式</div>
+        <h2>本桌正在用餐</h2>
+        <p class="tip">
+          订单 #{{ activeOrder.id }} ·
+          {{ ORDER_STATUS_TEXT(activeOrder.status) }}，可以继续追加菜品。
+        </p>
+        <div class="order-summary">
           <div class="sum-row">
             <span>已点菜品</span>
-            <span>{{ activeOrder.details.length }} 种</span>
+            <strong>{{ activeOrder.details.length }} 种</strong>
           </div>
           <div class="sum-row total">
             <span>当前合计</span>
-            <span class="price">¥{{ Number(activeOrder.totalAmount).toFixed(2) }}</span>
+            <MoneyText class="price" :amount="activeOrder.totalAmount" />
           </div>
         </div>
         <div class="actions">
           <van-button type="primary" block round size="large" @click="goMenu">继续加菜</van-button>
         </div>
       </template>
-    </div>
+    </section>
 
-    <!-- 登录弹窗：扫码后未登录自动弹出 -->
-    <van-popup v-model:show="showLogin" round closeable class="login-popup">
-      <div class="login-title">🍜 登录后点餐</div>
-      <div class="login-tip">请先登录，只有登录后才能点餐</div>
-      <van-cell-group inset>
-        <van-field
-          v-model="form.phone"
-          type="tel"
-          maxlength="11"
-          label="手机号"
-          placeholder="请输入手机号"
-        />
-        <van-field v-model="form.password" type="password" label="密码" placeholder="请输入密码" />
-      </van-cell-group>
-      <div class="login-actions">
-        <van-button type="primary" block round :loading="logging" @click="onLogin"
-          >登 录</van-button
-        >
-        <div class="go-register" @click="goRegister">没有账号？去注册</div>
-      </div>
+    <van-popup
+      v-model:show="showLogin"
+      round
+      closeable
+      class="login-popup"
+      aria-labelledby="landing-login-title"
+    >
+      <div class="popup-brand" aria-hidden="true">🍜</div>
+      <h2 id="landing-login-title" class="login-title">登录后开始点餐</h2>
+      <p class="login-tip">桌号 {{ tableId }} 已关联，登录后会回到当前桌台。</p>
+      <form @submit.prevent="onLogin">
+        <van-cell-group inset>
+          <van-field
+            ref="phoneInput"
+            v-model="form.phone"
+            name="phone"
+            type="tel"
+            autocomplete="tel"
+            inputmode="tel"
+            maxlength="11"
+            label="手机号"
+            placeholder="如：13800000000…"
+            :error-message="phoneError"
+            @update:model-value="phoneError = ''"
+          />
+          <van-field
+            ref="passwordInput"
+            v-model="form.password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            label="密码"
+            placeholder="请输入密码…"
+            :error-message="passwordError"
+            @update:model-value="passwordError = ''"
+          />
+        </van-cell-group>
+        <div class="login-actions">
+          <p v-if="formError" class="form-error" role="alert" aria-live="polite">
+            {{ formError }}
+          </p>
+          <van-button
+            type="primary"
+            block
+            round
+            native-type="submit"
+            :loading="logging"
+            :aria-busy="logging"
+          >
+            登录
+          </van-button>
+          <button type="button" class="go-register" @click="goRegister">没有账号？去注册</button>
+        </div>
+      </form>
     </van-popup>
-  </div>
+  </main>
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { nextTick, reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useUserStore } from '../store/user'
 import { useCartStore } from '../store/cart'
-import { getTableActiveOrder } from '../api/order'
 import { ORDER_STATUS_TEXT } from '../utils/constants'
 import { loginAndLoadProfile } from '../services/customerSession'
+import { synchronizeTableContext } from '../services/tableContext'
+import { tableLandingPath, tableMenuPath } from '../router/tableRoutes'
+import LoadingSkeleton from '../components/LoadingSkeleton.vue'
+import MoneyText from '../components/MoneyText.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -88,44 +145,50 @@ const cartStore = useCartStore()
 const tableId = route.params.tableId
 const loading = ref(false)
 const activeOrder = ref(null)
+const contextError = ref(null)
 
 // 登录弹窗
 const showLogin = ref(false)
 const logging = ref(false)
 const form = reactive({ phone: '', password: '' })
+const phoneError = ref('')
+const passwordError = ref('')
+const formError = ref('')
+const phoneInput = ref(null)
+const passwordInput = ref(null)
 
-// 已登录后查询本桌活跃订单，决定「首次点餐」还是「加菜模式」
-const loadActiveOrder = async () => {
+// 以路由桌台为主来源，恢复购物车并查询最新活跃订单。
+const syncContext = async () => {
   loading.value = true
-  try {
-    activeOrder.value = await getTableActiveOrder(tableId)
-    if (activeOrder.value) {
-      cartStore.setContext(tableId, 'add', activeOrder.value)
-    }
-  } catch {
-    // 拦截器已提示
-  } finally {
-    loading.value = false
-  }
+  const result = await synchronizeTableContext(tableId, { cartStore })
+  activeOrder.value = result.activeOrder
+  contextError.value = result.error
+  loading.value = false
 }
 
-onMounted(() => {
-  // 先清空旧的加菜上下文，避免跨桌串单
-  cartStore.setContext(tableId, 'new', null)
+onMounted(async () => {
   if (userStore.isLogin) {
-    loadActiveOrder()
+    await syncContext()
   } else {
+    cartStore.hydrateForTable(tableId)
     showLogin.value = true // 未登录自动弹出登录窗
   }
 })
 
 const onLogin = async () => {
+  phoneError.value = ''
+  passwordError.value = ''
+  formError.value = ''
   if (!/^1\d{10}$/.test(form.phone)) {
+    phoneError.value = '请输入 11 位手机号'
     showToast('请输入正确的手机号')
+    nextTick(() => phoneInput.value?.focus())
     return
   }
   if (!form.password) {
+    passwordError.value = '请输入密码'
     showToast('请输入密码')
+    nextTick(() => passwordInput.value?.focus())
     return
   }
   logging.value = true
@@ -134,147 +197,318 @@ const onLogin = async () => {
     userStore.setLogin(token, userInfo)
     showToast('登录成功')
     showLogin.value = false
-    loadActiveOrder()
+    syncContext()
   } catch {
     // 拦截器已提示
+    formError.value = '登录失败，请检查账号信息后重试'
   } finally {
     logging.value = false
   }
 }
 
-const goMenu = () => router.push('/menu')
+const goMenu = () => router.push(tableMenuPath(tableId))
 const goRegister = () => {
   showLogin.value = false
-  router.push({ path: '/register', query: { redirect: `/table/${tableId}` } })
+  router.push({ path: '/register', query: { redirect: tableLandingPath(tableId) } })
 }
 </script>
 
 <style scoped>
 .landing {
-  min-height: 100vh;
+  min-height: 100dvh;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  background: var(--bg-page);
 }
 
 .hero {
-  background: linear-gradient(160deg, #ff9a6c 0%, #ff5f3d 55%, #e54d2e 100%);
+  position: relative;
+  min-height: 350px;
+  overflow: hidden;
+  padding: calc(30px + env(safe-area-inset-top)) 24px 86px;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 13%), transparent 44%),
+    linear-gradient(155deg, #c94b2f, var(--brand-dark) 58%, #8f2918);
   color: #fff;
-  padding: 56px 24px 72px;
-  text-align: center;
-  border-radius: 0 0 28px 28px;
+}
+
+.hero-orb {
+  position: absolute;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.orb-one {
+  top: -100px;
+  right: -90px;
+  width: 280px;
+  height: 280px;
+}
+
+.orb-two {
+  bottom: -80px;
+  left: -70px;
+  width: 190px;
+  height: 190px;
+}
+
+.brand-lockup {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
 }
 
 .logo {
-  font-size: 44px;
-  margin-bottom: 8px;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgb(255 255 255 / 25%);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 14%);
+  font-size: 24px;
+  place-items: center;
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.brand-slogan {
+  margin-top: 2px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  opacity: 0.75;
+}
+
+.hero-copy {
+  position: relative;
+  margin-top: 36px;
+  text-align: center;
+}
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  opacity: 0.76;
 }
 
 .hero h1 {
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: 4px;
+  margin-top: 10px;
+  font-size: clamp(26px, 8vw, 34px);
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  text-wrap: balance;
 }
 
-.table-label {
-  margin-top: 24px;
-  font-size: 13px;
-  opacity: 0.85;
-  letter-spacing: 6px;
+.table-number {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 8px 18px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-xl);
+  background: rgb(255 255 255 / 12%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%);
 }
 
-.table-no {
-  font-size: 64px;
-  font-weight: 700;
-  line-height: 1.2;
-  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+.table-number span {
+  font-size: 12px;
+  letter-spacing: 3px;
+  opacity: 0.82;
+}
+
+.table-number strong {
+  font-size: 34px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .panel {
-  margin: -36px 16px 16px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px 16px 28px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 1;
+  width: min(calc(100% - 32px), 520px);
+  min-height: 250px;
+  margin: -48px auto 0;
+  padding: 28px 22px;
+  border: 1px solid rgb(233 224 216 / 82%);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-floating);
+  text-align: center;
 }
 
-.tip {
-  text-align: center;
-  color: var(--text-sub);
-  font-size: 14px;
-  margin-bottom: 8px;
+.mode-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 14px;
+  border-radius: var(--radius-lg);
+  font-size: 24px;
+  place-items: center;
+}
+
+.mode-icon.new {
+  background: var(--brand-light);
+}
+
+.mode-icon.add {
+  background: rgb(53 120 200 / 11%);
+  color: var(--status-info);
+}
+
+.mode-icon.warning {
+  background: rgb(196 122 34 / 12%);
+  color: var(--status-warning);
+  font-weight: 800;
 }
 
 .mode-badge {
-  text-align: center;
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
 }
 
 .mode-badge.new {
-  color: var(--brand-color);
+  color: var(--brand-dark);
 }
 
 .mode-badge.add {
-  color: #1989fa;
+  color: var(--status-info);
+}
+
+.mode-badge.warning {
+  color: var(--status-warning);
+}
+
+.panel h2 {
+  margin-top: 8px;
+  color: var(--text-main);
+  font-size: 22px;
+}
+
+.tip {
+  max-width: 30em;
+  margin: 8px auto 0;
+  color: var(--text-sub);
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 .actions {
-  margin-top: 16px;
+  margin-top: 22px;
 }
 
 .order-summary {
-  margin-top: 16px;
-  padding: 14px 16px;
+  margin-top: 18px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: #fbf8f5;
+  text-align: left;
 }
 
 .sum-row {
   display: flex;
   justify-content: space-between;
-  padding: 4px 0;
+  padding: 5px 0;
   color: var(--text-sub);
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.sum-row strong {
+  color: var(--text-main);
 }
 
 .sum-row.total {
-  border-top: 1px dashed #eee;
-  margin-top: 6px;
+  margin-top: 5px;
   padding-top: 10px;
+  border-top: 1px dashed var(--border-subtle);
   color: var(--text-main);
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.loading {
-  display: block;
-  margin: 40px auto;
-}
-
-/* 登录弹窗：居中、限宽，移动端不占满屏幕 */
 .login-popup {
-  width: min(320px, 85vw);
-  padding: 24px 20px 20px;
-  border-radius: 16px;
+  width: min(360px, calc(100vw - 32px));
+  padding: 28px 20px 22px;
+  border-radius: var(--radius-xl);
+}
+
+.popup-brand {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: var(--radius-lg);
+  background: var(--brand-light);
+  font-size: 25px;
+  place-items: center;
 }
 
 .login-title {
+  color: var(--text-main);
+  font-size: 20px;
   text-align: center;
-  font-size: 17px;
-  font-weight: 600;
 }
 
 .login-tip {
+  margin: 6px auto 18px;
+  color: var(--text-sub);
+  font-size: 12px;
+  line-height: 1.6;
   text-align: center;
-  color: var(--brand-color);
-  font-size: 13px;
-  margin: 6px 0 16px;
+}
+
+.login-popup :deep(.van-cell-group) {
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.login-popup :deep(.van-field) {
+  min-height: 54px;
+  align-items: center;
 }
 
 .login-actions {
   margin-top: 20px;
 }
 
-.go-register {
+.form-error {
+  margin-bottom: 10px;
+  color: var(--status-danger);
+  font-size: 12px;
   text-align: center;
-  margin-top: 14px;
-  color: var(--brand-color);
-  font-size: 14px;
+}
+
+.go-register {
+  display: block;
+  min-height: var(--tap-target-min);
+  margin: 8px auto 0;
+  padding-inline: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--brand-dark);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (min-width: 640px) {
+  .landing {
+    padding-top: 24px;
+  }
+
+  .hero {
+    width: min(calc(100% - 48px), 640px);
+    margin-inline: auto;
+    border-radius: var(--radius-xl);
+  }
 }
 </style>
