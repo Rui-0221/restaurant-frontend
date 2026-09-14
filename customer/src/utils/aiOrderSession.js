@@ -1,6 +1,6 @@
 import { normalizeTableId } from '../router/tableRoutes'
 
-const SESSION_KEY = 'customer_ai_order_session_v1'
+const SESSION_KEY = 'customer_ai_order_session_v2'
 
 const identity = (userId) => String(userId ?? '')
 

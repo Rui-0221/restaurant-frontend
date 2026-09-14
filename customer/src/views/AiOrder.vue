@@ -27,7 +27,7 @@
           v-for="prompt in quickPrompts"
           :key="prompt"
           type="button"
-          :disabled="sending || confirming"
+          :disabled="sending || !ready"
           @click="sendPrompt(prompt)"
         >
           {{ prompt }}
@@ -43,7 +43,7 @@
 
           <template v-if="message.action === 'PROPOSAL'">
             <div class="source-row">
-              <span>{{ sourceLabel(message.source) }}</span>
+              <span>AI 推荐</span>
               <span>推荐预览 · 尚未下单</span>
             </div>
             <ul class="proposal-list">
@@ -70,33 +70,35 @@
       </article>
 
       <p v-if="sending" class="thinking" role="status">正在阅读菜品手册并为你搭配…</p>
+      <div
+        ref="conversationEnd"
+        class="conversation-end"
+        data-testid="conversation-end"
+        aria-hidden="true"
+      />
     </section>
 
     <section v-if="currentProposal" class="confirm-card card" aria-labelledby="confirm-title">
       <div>
-        <p class="eyebrow">READY TO ORDER</p>
-        <h2 id="confirm-title">推荐方案已准备好</h2>
-        <p>
-          点击后会{{
-            cartStore.mode === 'add' ? '直接追加到当前订单' : '直接创建订单'
-          }}，不会先放入购物车。
-        </p>
+        <p class="eyebrow">READY TO ADD</p>
+        <h2 id="confirm-title">推荐菜品已准备好</h2>
+        <p>加入购物车后，可和手动选择的菜品一起调整、确认下单。</p>
       </div>
       <button
         type="button"
         class="confirm-button"
-        data-testid="confirm-proposal"
-        :disabled="sending || confirming"
-        @click="confirmProposal"
+        data-testid="add-recommendation"
+        :disabled="sending || !ready"
+        @click="addRecommendation"
       >
-        {{ confirming ? '正在确认…' : confirmLabel }}
+        加入购物车
       </button>
-      <p v-if="confirmError" class="confirm-error" role="alert">{{ confirmError }}</p>
     </section>
 
-    <aside v-if="cartStore.totalCount" class="cart-notice">
-      手动购物车中还有 {{ cartStore.totalCount }} 份菜；AI 下单不会清空或合并这些菜品。
-      <a :href="`#${cartPath}`">查看购物车</a>
+    <p v-if="confirmError" class="confirm-error" role="alert">{{ confirmError }}</p>
+    <aside class="cart-notice">
+      <a :href="`#${cartPath}`">查看购物车</a
+      ><button type="button" data-testid="restart-ai" @click="restart">重新开始</button>
     </aside>
 
     <form class="composer" @submit.prevent="sendMessage">
@@ -108,13 +110,13 @@
           name="aiOrderMessage"
           rows="2"
           maxlength="500"
-          :disabled="sending || confirming"
+          :disabled="sending || !ready"
           placeholder="例如：两个人，想吃清淡不辣的菜…"
           @compositionstart="handleCompositionStart"
           @compositionend="handleCompositionEnd"
           @keydown="handleComposerKeydown"
         />
-        <button type="submit" :disabled="!draft.trim() || sending || confirming">
+        <button type="submit" :disabled="!draft.trim() || sending || !ready">
           {{ sending ? '发送中' : '发送' }}
         </button>
       </div>
@@ -124,199 +126,203 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showSuccessToast } from 'vant'
-import { chatAiOrder, confirmAiOrder } from '../api/aiOrder'
+import { chatAiOrder, cancelAiOrder, getAiOrderMeal } from '../api/aiOrder'
 import { useCartStore } from '../store/cart'
-import { useUserStore } from '../store/user'
-import { synchronizeTableContext } from '../services/tableContext'
+import { getUser } from '../utils/storage'
+import { createRequestId } from '../utils/requestId'
 import {
-  clearAiOrderSession,
   loadAiOrderSession,
   saveAiOrderSession,
+  clearAiOrderSession,
 } from '../utils/aiOrderSession'
-import { tableCartPath, tableMenuPath } from '../router/tableRoutes'
+import { tableMenuPath, tableCartPath } from '../router/tableRoutes'
 import CustomerNavBar from '../components/CustomerNavBar.vue'
 import MoneyText from '../components/MoneyText.vue'
 
 const route = useRoute()
 const router = useRouter()
 const cartStore = useCartStore()
-const userStore = useUserStore()
 const tableId = Number(route.params.tableId)
-const menuPath = tableMenuPath(tableId) || '/'
-const cartPath = tableCartPath(tableId) || '/'
-const userId = computed(() => userStore.userInfo?.id ?? '')
-
-const quickPrompts = ['推荐本店招牌菜', '想吃清淡不辣的', '推荐一道川菜', '我有过敏或忌口']
+const userId = computed(() => getUser()?.id)
+const menuPath = tableMenuPath(tableId)
+const cartPath = tableCartPath(tableId)
+const quickPrompts = ['推荐几道招牌菜', '两个人，想吃清淡不辣的菜', '我对花生过敏，帮我推荐']
+const messages = ref([])
 const draft = ref('')
-const messages = ref([
-  {
-    id: 'welcome',
-    role: 'assistant',
-    text: '你好！可以告诉我口味、菜系、人数或过敏信息，也可以直接让我推荐招牌菜。',
-  },
-])
 const conversationId = ref(null)
 const currentProposal = ref(null)
 const sending = ref(false)
-const confirming = ref(false)
 const confirmError = ref('')
+const conversationEnd = ref(null)
 const isComposing = ref(false)
 let messageSequence = 0
+let activeRequest = null
+let disposed = false
+const ready = ref(false)
+let mealVersion = null
+const readMealVersion = () => getAiOrderMeal(tableId)
 
-const sourceLabels = {
-  DIRECT_MATCH: '按菜名精准选择',
-  SIGNATURE_RULE: '本店招牌推荐',
-  DEEPSEEK: 'AI 口味推荐',
-}
-const errorLabels = {
-  INVALID_REQUEST: '描述无法处理，请换一种说法',
-  RATE_LIMITED: '请求较多，请稍后再试',
-  STATE_UNAVAILABLE: '会话暂时不可用',
-  CONVERSATION_NOT_FOUND: '会话已失效，请重新开始',
-  CONVERSATION_MISMATCH: '会话与当前桌台不匹配',
-  STALE_TURN: '本次回复已失效，请重新发送',
-  AI_UNAVAILABLE: 'AI 暂时不可用',
-}
-
-const sourceLabel = (source) => sourceLabels[source] || '本店菜品推荐'
-const errorLabel = (code) => errorLabels[code] || '本次无法生成安全的推荐方案'
-const confirmLabel = computed(() => (cartStore.mode === 'add' ? '确认并加菜' : '确认并下单'))
-
-const persist = () => {
+const persist = () =>
   saveAiOrderSession(userId.value, tableId, {
     conversationId: conversationId.value,
     messages: messages.value,
     proposal: currentProposal.value,
+    mealVersion,
   })
+const scrollToLatestMessage = async (behavior = 'smooth') => {
+  await nextTick()
+  conversationEnd.value?.scrollIntoView?.({ behavior, block: 'end' })
 }
-
 const appendMessage = (message) => {
-  messageSequence += 1
-  messages.value.push({ id: `${Date.now()}-${messageSequence}`, ...message })
+  messages.value.push({ id: `${Date.now()}-${++messageSequence}`, ...message })
+  void scrollToLatestMessage()
 }
-
-const restore = () => {
-  const stored = loadAiOrderSession(userId.value, tableId)
-  if (!stored) return
-  messages.value = stored.messages
-  conversationId.value = stored.conversationId || null
-  currentProposal.value = stored.proposal || null
+const cancelPending = () => {
+  const pending = activeRequest
+  if (!pending) return
+  activeRequest = null
+  pending.controller.abort()
+  sending.value = false
+  void cancelAiOrder(pending.id).catch(() => {})
 }
-
+const restart = () => {
+  cancelPending()
+  conversationId.value = null
+  currentProposal.value = null
+  messages.value = []
+  confirmError.value = ''
+  clearAiOrderSession()
+}
 onMounted(async () => {
-  restore()
-  const result = await synchronizeTableContext(tableId, { cartStore })
-  if (result.error) {
-    appendMessage({
-      role: 'assistant',
-      text: '桌台状态暂时不可用，请返回菜单重试。',
-      action: 'MANUAL_ORDER',
-      items: [],
-      errorCode: 'STATE_UNAVAILABLE',
-    })
-    currentProposal.value = null
-    persist()
+  window.addEventListener('pagehide', cancelPending)
+  cartStore.hydrateForTable(tableId)
+  try {
+    mealVersion = await readMealVersion()
+    if (disposed) return
+    const stored = loadAiOrderSession(userId.value, tableId)
+    if (stored?.mealVersion === mealVersion) {
+      messages.value = stored.messages
+      conversationId.value = stored.conversationId || null
+      currentProposal.value = stored.proposal || null
+      void scrollToLatestMessage('auto')
+    } else {
+      clearAiOrderSession()
+    }
+    ready.value = true
+  } catch {
+    confirmError.value = '桌台状态暂时不可用，请返回菜单重试。'
   }
+})
+onBeforeUnmount(() => {
+  disposed = true
+  cancelPending()
+  window.removeEventListener('pagehide', cancelPending)
 })
 
 const sendPrompt = async (prompt) => {
   draft.value = prompt
   await sendMessage()
 }
-
 const handleCompositionStart = () => {
   isComposing.value = true
 }
-
 const handleCompositionEnd = () => {
   isComposing.value = false
 }
-
 const handleComposerKeydown = (event) => {
   if (event.key !== 'Enter' || event.shiftKey || event.isComposing || isComposing.value) return
   event.preventDefault()
   void sendMessage()
 }
-
 const sendMessage = async () => {
   const text = draft.value.trim()
-  if (!text || sending.value || confirming.value) return
-
+  if (!text || sending.value || disposed || !ready.value) return
+  const pending = { id: createRequestId(), controller: new AbortController() }
+  activeRequest = pending
   draft.value = ''
-  confirmError.value = ''
   currentProposal.value = null
+  confirmError.value = ''
   appendMessage({ role: 'user', text })
-  persist()
   sending.value = true
-
+  persist()
   try {
-    const payload = { tableId, message: text }
+    const payload = { tableId, message: text, requestId: pending.id }
     if (conversationId.value) payload.conversationId = conversationId.value
-    const response = await chatAiOrder(payload)
-    conversationId.value = response.conversationId || conversationId.value
+    const response = await chatAiOrder(payload, { signal: pending.controller.signal })
+    if (disposed || activeRequest !== pending) return
+    if (response.errorCode === 'CANCELLED') return
+    if (response.errorCode === 'CONVERSATION_NOT_FOUND') {
+      conversationId.value = null
+      messages.value = messages.value.slice(-1)
+    } else {
+      conversationId.value = response.conversationId || conversationId.value
+    }
     appendMessage({
       role: 'assistant',
-      text: response.reply || '本次没有生成可用回复，请手动点餐。',
+      text: response.reply,
       action: response.action,
-      source: response.source,
       items: response.items || [],
       totalAmount: response.totalAmount,
-      proposalId: response.proposalId,
       errorCode: response.errorCode,
     })
-    if (
-      response.action === 'PROPOSAL' &&
-      response.conversationId &&
-      response.proposalId &&
-      response.items?.length
-    ) {
-      currentProposal.value = response
-    }
+    if (response.action === 'PROPOSAL' && response.items?.length) currentProposal.value = response
   } catch (error) {
+    if (disposed || activeRequest !== pending || pending.controller.signal.aborted) return
+    // 超时或网络断开也停止服务端生成，避免留下无接收者的请求。
+    void cancelAiOrder(pending.id).catch(() => {})
     appendMessage({
       role: 'assistant',
-      text: error?.message || 'AI 请求失败，请重试或手动点餐。',
+      text: error?.message || 'AI 请求失败，请重试。',
       action: 'MANUAL_ORDER',
       items: [],
       errorCode: 'AI_UNAVAILABLE',
     })
   } finally {
-    sending.value = false
-    persist()
-  }
-}
-
-const confirmProposal = async () => {
-  if (!currentProposal.value || confirming.value || sending.value) return
-  confirming.value = true
-  confirmError.value = ''
-  const proposal = currentProposal.value
-
-  try {
-    const result = await confirmAiOrder({
-      tableId,
-      conversationId: proposal.conversationId,
-      proposalId: proposal.proposalId,
-    })
-    if (!result?.order?.id) throw new Error('订单确认结果不完整，请重试')
-    cartStore.setContext(tableId, 'add', result.order)
-    clearAiOrderSession()
-    showSuccessToast(result.idempotentReplay ? '订单已确认' : 'AI 点餐成功')
-    router.replace(`/order-detail/${result.order.id}`)
-  } catch (error) {
-    confirmError.value = error?.message || '确认失败，请稍后重试'
-    if (/方案|会话|过期|失效/.test(confirmError.value)) {
-      currentProposal.value = null
+    if (!disposed && activeRequest === pending) {
+      activeRequest = null
+      sending.value = false
+      persist()
     }
-    persist()
-  } finally {
-    confirming.value = false
   }
 }
-
+const addRecommendation = async () => {
+  if (!currentProposal.value || sending.value || !ready.value) return
+  confirmError.value = ''
+  const recommendation = currentProposal.value
+  ready.value = false
+  try {
+    const currentMeal = await readMealVersion()
+    if (currentProposal.value !== recommendation) return
+    if (disposed) return
+    if (currentMeal !== mealVersion) {
+      restart()
+      mealVersion = currentMeal
+      confirmError.value = '已开始新的用餐，请重新描述需求。'
+      return
+    }
+    const result = cartStore.addItems(
+      recommendation.items.map((item) => ({
+        dish: { id: item.dishId, name: item.name, price: Number(item.price) },
+        amount: item.amount,
+      })),
+    )
+    if (!result.ok) {
+      confirmError.value = result.message
+      return
+    }
+    currentProposal.value = null
+    persist()
+    showSuccessToast('已加入购物车，可继续调整后下单')
+  } catch {
+    confirmError.value = '桌台状态暂时不可用，请稍后重试。'
+  } finally {
+    if (!disposed) ready.value = true
+  }
+}
+const errorLabel = (code) => (code === 'RATE_LIMITED' ? '稍后再试' : '可以继续描述需求或手动选菜')
 const goMenu = () => router.push(menuPath)
 </script>
 
@@ -559,6 +565,13 @@ const goMenu = () => router.push(menuPath)
   font-size: 12px;
 }
 
+.conversation-end {
+  width: 100%;
+  height: 1px;
+  scroll-margin-bottom: calc(116px + env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+
 .confirm-card {
   margin: 4px 12px 12px;
   padding: 17px;
@@ -600,6 +613,9 @@ const goMenu = () => router.push(menuPath)
 }
 
 .cart-notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin: 0 12px 12px;
   padding: 11px 13px;
   border-radius: var(--radius-md);

@@ -1,3 +1,4 @@
+import { orderRequest, completeOrderRequest } from '../utils/orderRequest'
 import { getTableActiveOrder, scanOrder as defaultScanOrder } from '../api/order.js'
 import { normalizeTableId } from '../router/tableRoutes.js'
 
@@ -19,8 +20,13 @@ export async function submitOrderWithRecovery({
 }) {
   const normalizedTableId = normalizeTableId(tableId)
   const itemSnapshot = snapshotItems(items)
-  const payload = { tableId: Number(normalizedTableId), items: itemSnapshot }
-  const submitOnce = () => scanOrder(payload, { suppressBusinessToast: true })
+  const requestId = orderRequest(normalizedTableId, itemSnapshot)
+  const payload = { tableId: Number(normalizedTableId), items: itemSnapshot, requestId }
+  const submitOnce = async () => {
+    const order = await scanOrder(payload, { suppressBusinessToast: true })
+    completeOrderRequest(requestId)
+    return order
+  }
 
   try {
     return { kind: 'success', order: await submitOnce(), retried: false }

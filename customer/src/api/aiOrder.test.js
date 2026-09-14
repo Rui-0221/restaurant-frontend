@@ -1,72 +1,47 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import request from './index'
-import { chatAiOrder, confirmAiOrder } from './aiOrder'
-
+import { chatAiOrder, cancelAiOrder } from './aiOrder'
+import { setToken } from '../utils/storage'
 const originalAdapter = request.defaults.adapter
-
-const replyWith =
-  (envelope, observe = () => {}) =>
-  async (config) => {
-    observe(config)
-    return {
-      data: envelope,
-      status: 200,
-      statusText: 'OK',
-      headers: {},
-      config,
-    }
-  }
-
 afterEach(() => {
   request.defaults.adapter = originalAdapter
+  vi.unstubAllGlobals()
 })
-
 describe('AI 点餐接口', () => {
-  it('保留业务失败信封中的 MANUAL_ORDER 安全响应', async () => {
-    let sentConfig
-    request.defaults.adapter = replyWith(
-      {
-        code: 0,
-        msg: '模型超时，请手动点餐',
+  it('携带取消信号并保留业务失败中的安全响应', async () => {
+    let sent
+    request.defaults.adapter = async (config) => {
+      sent = config
+      return {
         data: {
-          action: 'MANUAL_ORDER',
-          reply: '模型超时，请手动点餐',
-          items: [],
-          errorCode: 'AI_UNAVAILABLE',
+          code: 0,
+          msg: '模型超时',
+          data: { action: 'MANUAL_ORDER', items: [], errorCode: 'AI_UNAVAILABLE' },
         },
-      },
-      (config) => {
-        sentConfig = config
-      },
-    )
-
-    const result = await chatAiOrder({ tableId: 1, message: '我对花生过敏，推荐菜品' })
-
-    expect(sentConfig.method).toBe('post')
-    expect(sentConfig.url).toBe('/users/ai-order/chat')
-    expect(JSON.parse(sentConfig.data)).toEqual({ tableId: 1, message: '我对花生过敏，推荐菜品' })
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      }
+    }
+    const signal = new AbortController().signal
+    const payload = { tableId: 1, requestId: 'r1', message: '推荐' }
+    const result = await chatAiOrder(payload, { signal })
+    expect(sent.url).toBe('/users/ai-order/chat')
+    expect(JSON.parse(sent.data)).toEqual(payload)
+    expect(sent.signal).toBe(signal)
     expect(result).toMatchObject({ action: 'MANUAL_ORDER', errorCode: 'AI_UNAVAILABLE', items: [] })
   })
-
-  it('确认经过后端校验的推荐方案', async () => {
-    let sentConfig
-    request.defaults.adapter = replyWith(
-      {
-        code: 1,
-        msg: 'success',
-        data: { proposalId: 'proposal-1', order: { id: 88 }, idempotentReplay: false },
-      },
-      (config) => {
-        sentConfig = config
-      },
-    )
-
-    const payload = { tableId: 1, conversationId: 'conversation-1', proposalId: 'proposal-1' }
-    const result = await confirmAiOrder(payload)
-
-    expect(sentConfig.method).toBe('post')
-    expect(sentConfig.url).toBe('/users/ai-order/confirm')
-    expect(JSON.parse(sentConfig.data)).toEqual(payload)
-    expect(result.order.id).toBe(88)
+  it('退出时用带身份的 keepalive 请求通知取消', async () => {
+    const fetch = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetch)
+    setToken('test-token')
+    await cancelAiOrder('r1')
+    expect(fetch).toHaveBeenCalledWith('/api/users/ai-order/cancel', {
+      method: 'POST',
+      keepalive: true,
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+      body: JSON.stringify({ requestId: 'r1' }),
+    })
   })
 })

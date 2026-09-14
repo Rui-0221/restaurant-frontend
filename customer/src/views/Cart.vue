@@ -187,7 +187,7 @@ const confirmRecovery = async ({ mode, activeOrder }) => {
 }
 
 const submit = async () => {
-  if (contextError.value || !tableId || cartStore.totalCount === 0) return
+  if (submitting.value || contextError.value || !tableId || cartStore.totalCount === 0) return
   if (cartStore.list.length > ORDER_LIMITS.maxKinds) {
     showToast(`一次最多选择 ${ORDER_LIMITS.maxKinds} 种菜品`)
     return

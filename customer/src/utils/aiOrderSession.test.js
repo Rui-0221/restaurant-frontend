@@ -23,7 +23,7 @@ describe('AI 点餐会话存储', () => {
   })
 
   it('显式清除会话且忽略损坏的数据', () => {
-    sessionStorage.setItem('customer_ai_order_session_v1', '{broken')
+    sessionStorage.setItem('customer_ai_order_session_v2', '{broken')
     expect(loadAiOrderSession(7, 3)).toBeNull()
 
     saveAiOrderSession(7, 3, { conversationId: null, messages: [], proposal: null })

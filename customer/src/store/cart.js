@@ -59,6 +59,23 @@ export const useCartStore = defineStore('cart', {
       this.items = Object.fromEntries((restored?.items ?? []).map((item) => [item.dish.id, item]))
       return restored?.items ?? []
     },
+    // 统一接收一组菜品，全部通过数量限制后再写入；调用方无需读取购物车。
+    addItems(items) {
+      const next = { ...this.items }
+      for (const item of items) {
+        const amount = (next[item.dish.id]?.amount || 0) + Number(item.amount)
+        if (!Number.isInteger(amount) || amount < 1 || amount > ORDER_LIMITS.maxAmountPerDish) {
+          return { ok: false, message: '合并后单个菜品最多 99 份，请先调整购物车' }
+        }
+        next[item.dish.id] = { dish: next[item.dish.id]?.dish || item.dish, amount }
+      }
+      if (Object.keys(next).length > ORDER_LIMITS.maxKinds) {
+        return { ok: false, message: '一次最多选择 50 种菜品，请先调整购物车' }
+      }
+      this.items = next
+      this.persistSession()
+      return { ok: true }
+    },
     addItem(dish) {
       const currentAmount = this.items[dish.id]?.amount || 0
       return this.setItemAmount(dish, currentAmount + 1)
