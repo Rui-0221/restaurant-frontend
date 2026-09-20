@@ -76,7 +76,8 @@ html {
 }
 
 body {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background:
     radial-gradient(circle at 85% 0%, rgb(229 77 46 / 6%), transparent 32rem), var(--bg-page);
   color: var(--text-main);

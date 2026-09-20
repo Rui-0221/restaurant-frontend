@@ -124,6 +124,7 @@ const logout = async () => {
 
 <style scoped>
 .layout {
+  height: 100vh;
   height: 100dvh;
   min-height: 0;
 }
@@ -222,6 +223,7 @@ const logout = async () => {
 
 .drawer-navigation {
   width: 100%;
+  height: 100vh;
   height: 100dvh;
 }
 

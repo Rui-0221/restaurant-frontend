@@ -137,6 +137,7 @@ const onLogin = async () => {
 <style scoped>
 .login-page {
   display: grid;
+  min-height: 100vh;
   min-height: 100dvh;
   place-items: center;
   overflow: auto;
@@ -404,6 +405,7 @@ const onLogin = async () => {
   }
 
   .login-shell {
+    min-height: 100vh;
     min-height: 100dvh;
     border: 0;
     border-radius: 0;
