@@ -498,6 +498,27 @@ const submit = async () => {
   transform: translateX(-50%);
 }
 
+@media (max-width: 480px) {
+  .cart-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .item-image {
+    grid-row: span 2;
+  }
+
+  .item-name {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .cart-item :deep(.quantity-control) {
+    grid-column: 2;
+    justify-self: end;
+  }
+}
+
 @media (max-width: 360px) {
   .cart-hero {
     padding-inline: 16px;

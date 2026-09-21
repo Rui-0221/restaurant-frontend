@@ -136,6 +136,21 @@ h1 {
   box-shadow: var(--shadow-floating);
 }
 
+@media (max-width: 480px) {
+  .auth-hero {
+    min-height: 224px;
+    padding: calc(24px + env(safe-area-inset-top)) 20px 64px;
+  }
+
+  h1 {
+    margin-top: 16px;
+  }
+
+  .auth-content {
+    padding-block: 20px 24px;
+  }
+}
+
 @media (min-width: 640px) {
   .auth-page {
     display: grid;

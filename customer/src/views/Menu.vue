@@ -381,6 +381,7 @@ const goProfile = () => router.push('/profile')
 
 .dish-bottom {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);

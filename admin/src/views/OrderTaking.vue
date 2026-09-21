@@ -695,6 +695,16 @@ const formatMoney = (value) => moneyFormatter.format(Number(value) || 0)
   }
 }
 
+@media (max-width: 360px) {
+  .dish-card {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+
+  .dish-body {
+    padding: 10px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dish-card:hover {
     transform: none;

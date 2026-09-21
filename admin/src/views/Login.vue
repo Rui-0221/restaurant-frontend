@@ -407,18 +407,19 @@ const onLogin = async () => {
   .login-shell {
     min-height: 100vh;
     min-height: 100dvh;
+    grid-template-rows: auto 1fr;
     border: 0;
     border-radius: 0;
     box-shadow: none;
   }
 
   .brand-panel {
-    min-height: 224px;
-    padding: calc(22px + env(safe-area-inset-top)) 22px 28px;
+    min-height: 0;
+    padding: calc(20px + env(safe-area-inset-top)) 22px 20px;
   }
 
-  .brand-message h1 {
-    font-size: 24px;
+  .brand-message {
+    display: none;
   }
 
   .form-panel {

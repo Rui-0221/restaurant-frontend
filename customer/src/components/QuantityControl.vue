@@ -1,6 +1,7 @@
 <template>
   <van-stepper
     ref="stepperRef"
+    class="quantity-control"
     :model-value="modelValue"
     :min="min"
     :max="max"
@@ -52,6 +53,11 @@ const handleUpdate = (value) => {
 </script>
 
 <style scoped>
+.quantity-control {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 :deep(.van-stepper__minus),
 :deep(.van-stepper__plus) {
   width: var(--tap-target-min);

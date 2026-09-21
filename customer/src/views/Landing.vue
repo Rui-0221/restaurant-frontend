@@ -500,6 +500,33 @@ const goRegister = () => {
   font-weight: 700;
 }
 
+@media (max-width: 480px) {
+  .hero {
+    min-height: 0;
+    padding: calc(20px + env(safe-area-inset-top)) 20px 64px;
+  }
+
+  .hero-copy {
+    margin-top: 20px;
+  }
+
+  .hero h1 {
+    font-size: 26px;
+  }
+
+  .table-number {
+    margin-top: 12px;
+  }
+
+  .table-number strong {
+    font-size: 28px;
+  }
+
+  .panel {
+    padding: 20px;
+  }
+}
+
 @media (min-width: 640px) {
   .landing {
     padding-top: 24px;
